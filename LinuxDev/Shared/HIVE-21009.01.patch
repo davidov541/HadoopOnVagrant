@@ -1,0 +1,253 @@
+diff --git common/src/java/org/apache/hadoop/hive/conf/HiveConf.java common/src/java/org/apache/hadoop/hive/conf/HiveConf.java
+index 085bed9..3460d2f 100644
+--- common/src/java/org/apache/hadoop/hive/conf/HiveConf.java
++++ common/src/java/org/apache/hadoop/hive/conf/HiveConf.java
+@@ -3487,6 +3487,14 @@ private static void populateLlapDaemonVarsSet(Set<String> llapDaemonVarsSetLocal
+         "For example: (&(objectClass=group)(objectClass=top)(instanceType=4)(cn=Domain*)) \n" +
+         "(&(objectClass=person)(|(sAMAccountName=admin)(|(memberOf=CN=Domain Admins,CN=Users,DC=domain,DC=com)" +
+         "(memberOf=CN=Administrators,CN=Builtin,DC=domain,DC=com))))"),
++    HIVE_SERVER2_PLAIN_LDAP_BIND_USER("hive.server2.authentication.ldap.binddn", null,
++        "The user with which to bind to the LDAP server, and search for the full domain name of the user being authenticated.\n" +
++        "This should be the full domain name of the user, and should have search access across all users in the LDAP tree.\n" +
++        "If not specified, then the user being authenticated will be used as the bind user.\n" +
++        "For example: CN=bindUser,CN=Users,DC=subdomain,DC=domain,DC=com"),
++    HIVE_SERVER2_PLAIN_LDAP_BIND_PASSWORD("hive.server2.authentication.ldap.bindpw", null,
++        "The password for the bind user, to be used to search for the full name of the user being authenticated.\n" +
++        "If the username is specified, this parameter must also be specified."),
+     HIVE_SERVER2_CUSTOM_AUTHENTICATION_CLASS("hive.server2.custom.authentication.class", null,
+         "Custom authentication class. Used when property\n" +
+         "'hive.server2.authentication' is set to 'CUSTOM'. Provided class\n" +
+diff --git service/pom.xml service/pom.xml
+index eca6f3b..3c36070 100644
+--- service/pom.xml
++++ service/pom.xml
+@@ -323,6 +323,11 @@
+   <build>
+     <sourceDirectory>${basedir}/src/java</sourceDirectory>
+     <testSourceDirectory>${basedir}/src/test</testSourceDirectory>
++    <testResources>
++      <testResource>
++        <directory>${basedir}/src/test/resources</directory>
++      </testResource>
++    </testResources>
+     <resources>
+       <resource>
+         <directory>${project.build.directory}</directory>
+diff --git service/src/java/org/apache/hive/service/auth/LdapAuthenticationProviderImpl.java service/src/java/org/apache/hive/service/auth/LdapAuthenticationProviderImpl.java
+index 73bbb6b..bdc892a 100644
+--- service/src/java/org/apache/hive/service/auth/LdapAuthenticationProviderImpl.java
++++ service/src/java/org/apache/hive/service/auth/LdapAuthenticationProviderImpl.java
+@@ -18,13 +18,16 @@
+ package org.apache.hive.service.auth;
+ 
+ import javax.security.sasl.AuthenticationException;
+-
++import javax.naming.NamingException;
+ import com.google.common.annotations.VisibleForTesting;
+ import com.google.common.collect.ImmutableList;
++import java.io.IOException;
+ import java.util.Iterator;
+ import java.util.List;
+ import org.apache.commons.lang.StringUtils;
+ import org.apache.hadoop.hive.conf.HiveConf;
++import org.apache.hadoop.security.alias.CredentialProviderFactory;
++import org.apache.hadoop.security.alias.CredentialProvider;
+ import org.apache.hive.service.ServiceUtils;
+ import org.apache.hive.service.auth.ldap.ChainFilterFactory;
+ import org.apache.hive.service.auth.ldap.CustomQueryFilterFactory;
+@@ -68,14 +71,59 @@ public LdapAuthenticationProviderImpl(HiveConf conf) {
+   @Override
+   public void Authenticate(String user, String password) throws AuthenticationException {
+     DirSearch search = null;
++    String bindUser = this.conf.getVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_USER);
++    String bindPassword = getBindPassword();
++    boolean usedBind = bindUser != null && bindPassword != null;
++    if (!usedBind) {
++      // If no bind user or bind password was specified, 
++      // we assume the user we are authenticating has the ability to search
++      // the LDAP tree, so we use it as the "binding" account.
++      // This is the way it worked before bind users were allowed in the LDAP authenticator, 
++      // so we keep existing systems working.
++      bindUser = user;
++      bindPassword = password;
++    }
+     try {
+-      search = createDirSearch(user, password);
++      search = createDirSearch(bindUser, bindPassword);
+       applyFilter(search, user);
++      if (usedBind) {
++        // If we used the bind user, then we need to authenticate again, this time using the full user name we got during the bind process.
++        createDirSearch(search.findUserDn(user), password);
++      }
++    } catch (NamingException e) {
++      throw new AuthenticationException("Unable to find the user in the LDAP tree. " + e.getMessage());
+     } finally {
+       ServiceUtils.cleanup(LOG, search);
+     }
+   }
+ 
++  private String getBindPassword() {
++    String bindPassword = this.conf.getVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_PASSWORD);
++    if (bindPassword == null) {
++      try {
++        List<CredentialProvider> providers = CredentialProviderFactory.getProviders(this.conf);
++        for (CredentialProvider provider : providers) {
++          try {
++            CredentialProvider.CredentialEntry entry = provider.getCredentialEntry(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_PASSWORD.toString());
++            LOG.debug("Checking credentials provider " + provider.toString() + " for key " + HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_PASSWORD.toString());
++            if (entry != null) {
++              bindPassword = new String(entry.getCredential());
++              LOG.debug("Found the LDAP bind password in the credentials provider " + provider.toString());
++              break;
++            }
++          } catch (IOException e) {
++            LOG.debug("Did not find the alias " + HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_PASSWORD.toString() + " in the credentials provider " + provider.toString());
++          }
++        }
++      } catch (IOException e) {
++        LOG.error("Error while accessing credential providers. Unable to check any credential providers for the binding password. Exception: " + e.getMessage());
++      }
++    } else {
++      LOG.debug("LDAP bind password was set in Hive configuration, and retrieved properly.");
++    }
++    return bindPassword;
++  }
++
+   private DirSearch createDirSearch(String user, String password) throws AuthenticationException {
+     if (StringUtils.isBlank(user)) {
+       throw new AuthenticationException("Error validating LDAP user:"
+diff --git service/src/test/org/apache/hive/service/auth/TestLdapAuthenticationProviderImpl.java service/src/test/org/apache/hive/service/auth/TestLdapAuthenticationProviderImpl.java
+index 43453fa..9f8010f 100644
+--- service/src/test/org/apache/hive/service/auth/TestLdapAuthenticationProviderImpl.java
++++ service/src/test/org/apache/hive/service/auth/TestLdapAuthenticationProviderImpl.java
+@@ -22,6 +22,7 @@
+ import javax.naming.NamingException;
+ import javax.security.sasl.AuthenticationException;
+ import org.apache.hadoop.hive.conf.HiveConf;
++import org.apache.hadoop.security.alias.CredentialProviderFactory;
+ import org.apache.hive.service.auth.ldap.DirSearch;
+ import org.apache.hive.service.auth.ldap.DirSearchFactory;
+ import org.apache.hive.service.auth.ldap.LdapSearchFactory;
+@@ -324,6 +325,118 @@ public void testAuthenticateWhenUserMembershipKeyFilter2x2PatternsPasses() throw
+     verify(search, atLeastOnce()).close();
+   }
+ 
++  @Test
++  public void testAuthenticateWithBindInCredentialFilePasses() throws AuthenticationException, NamingException {
++    String bindUser = "cn=BindUser,ou=Users,ou=branch1,dc=mycorp,dc=com";
++    String bindPass = "testPassword";
++    String authFullUser = "cn=user1,ou=Users,ou=branch1,dc=mycorp,dc=com";
++    String authUser = "user1";
++    String authPass = "Blah";
++    String tmpDir = System.getProperty("build.dir");
++    conf.setVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_USER, bindUser);
++    conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, "jceks://file" + tmpDir + "/test-classes/creds/test.jceks");
++
++    System.out.println(tmpDir);
++
++    when(search.findUserDn(eq(authUser))).thenReturn(authFullUser);
++
++    auth = new LdapAuthenticationProviderImpl(conf, factory);
++    auth.Authenticate(authUser, authPass);
++
++    verify(factory, times(1)).getInstance(isA(HiveConf.class), eq(bindUser), eq(bindPass));
++    verify(factory, times(1)).getInstance(isA(HiveConf.class), eq(authFullUser), eq(authPass));
++    verify(search, times(1)).findUserDn(eq(authUser));
++  }
++
++  @Test
++  public void testAuthenticateWithBindInMissingCredentialFilePasses() throws AuthenticationException, NamingException {
++    String bindUser = "cn=BindUser,ou=Users,ou=branch1,dc=mycorp,dc=com";
++    String authUser = "user1";
++    String authPass = "Blah";
++    String tmpDir = System.getProperty("build.dir");
++    conf.setVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_USER, bindUser);
++    conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, "jceks://file" + tmpDir + "/test-classes/creds/nonExistent.jceks");
++
++    System.out.println(tmpDir);
++
++    auth = new LdapAuthenticationProviderImpl(conf, factory);
++    auth.Authenticate(authUser, authPass);
++
++    verify(factory, times(1)).getInstance(isA(HiveConf.class), eq(authUser), eq(authPass));
++  }
++
++  @Test
++  public void testAuthenticateWithBindUserPasses() throws AuthenticationException, NamingException {
++    String bindUser = "cn=BindUser,ou=Users,ou=branch1,dc=mycorp,dc=com";
++    String bindPass = "Blah";
++    String authFullUser = "cn=user1,ou=Users,ou=branch1,dc=mycorp,dc=com";
++    String authUser = "user1";
++    String authPass = "Blah2";
++    conf.setVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_USER, bindUser);
++    conf.setVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_PASSWORD, bindPass);
++
++    when(search.findUserDn(eq(authUser))).thenReturn(authFullUser);
++
++    auth = new LdapAuthenticationProviderImpl(conf, factory);
++    auth.Authenticate(authUser, authPass);
++
++    verify(factory, times(1)).getInstance(isA(HiveConf.class), eq(bindUser), eq(bindPass));
++    verify(factory, times(1)).getInstance(isA(HiveConf.class), eq(authFullUser), eq(authPass));
++    verify(search, times(1)).findUserDn(eq(authUser));
++  }
++
++  @Test
++  public void testAuthenticateWithBindUserFailsOnAuthentication() throws AuthenticationException, NamingException {
++    String bindUser = "cn=BindUser,ou=Users,ou=branch1,dc=mycorp,dc=com";
++    String bindPass = "Blah";
++    String authFullUser = "cn=user1,ou=Users,ou=branch1,dc=mycorp,dc=com";
++    String authUser = "user1";
++    String authPass = "Blah2";
++    conf.setVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_USER, bindUser);
++    conf.setVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_PASSWORD, bindPass);
++
++    thrown.expect(AuthenticationException.class);
++    when(factory.getInstance(any(HiveConf.class), eq(authFullUser), eq(authPass))).
++      thenThrow(AuthenticationException.class);
++    when(search.findUserDn(eq(authUser))).thenReturn(authFullUser);
++
++    auth = new LdapAuthenticationProviderImpl(conf, factory);
++    auth.Authenticate(authUser, authPass);
++  }
++  
++  @Test
++  public void testAuthenticateWithBindUserFailsOnGettingDn() throws AuthenticationException, NamingException {
++    String bindUser = "cn=BindUser,ou=Users,ou=branch1,dc=mycorp,dc=com";
++    String bindPass = "Blah";
++    String authFullUser = "cn=user1,ou=Users,ou=branch1,dc=mycorp,dc=com";
++    String authUser = "user1";
++    String authPass = "Blah2";
++    conf.setVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_USER, bindUser);
++    conf.setVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_PASSWORD, bindPass);
++
++    thrown.expect(AuthenticationException.class);
++    when(search.findUserDn(eq(authUser))).thenThrow(NamingException.class);
++
++    auth = new LdapAuthenticationProviderImpl(conf, factory);
++    auth.Authenticate(authUser, authPass);
++  }
++  
++  @Test
++  public void testAuthenticateWithBindUserFailsOnBinding() throws AuthenticationException {
++    String bindUser = "cn=BindUser,ou=Users,ou=branch1,dc=mycorp,dc=com";
++    String bindPass = "Blah";
++    String authUser = "user1";
++    String authPass = "Blah2";
++    conf.setVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_USER, bindUser);
++    conf.setVar(HiveConf.ConfVars.HIVE_SERVER2_PLAIN_LDAP_BIND_PASSWORD, bindPass);
++
++    thrown.expect(AuthenticationException.class);
++    when(factory.getInstance(any(HiveConf.class), eq(bindUser), eq(bindPass))).thenThrow(AuthenticationException.class);
++
++    auth = new LdapAuthenticationProviderImpl(conf, factory);
++    auth.Authenticate(authUser, authPass);
++  }
++
+   private void expectAuthenticationExceptionForInvalidPassword() {
+     thrown.expect(AuthenticationException.class);
+     thrown.expectMessage("a null or blank password has been provided");
+diff --git service/src/test/resources/creds/test.jceks service/src/test/resources/creds/test.jceks
+new file mode 100755
+index 0000000..8d58c41
+Binary files /dev/null and service/src/test/resources/creds/test.jceks differ

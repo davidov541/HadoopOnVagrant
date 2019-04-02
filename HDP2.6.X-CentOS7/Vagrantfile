@@ -1,0 +1,111 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+numMasters=1
+numData=2
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  (1..numData).each do |i|
+    config.vm.define "dat#{i}" do |node|
+      node.vm.box = "centos/7"
+      node.vm.provider "virtualbox" do |vb|
+         # Display the VirtualBox GUI when booting the machine
+         # vb.gui = true
+      
+         # Customize the amount of memory on the VM:
+         vb.memory = "4096"
+      end
+      node.vm.hostname = "dat#{i}"
+      node.disksize.size = "50GB"
+      node.vm.synced_folder "Shared", "/vagrant_shared"
+      node.vm.network "public_network"
+      node.vm.network "private_network", ip: "10.0.0.#{i + 20}", virtualbox__intnet: true
+      node.vm.provision :shell, env: { "buildNumber" => "2.6.5.0" }, inline: <<-SHELL
+       sudo su
+       cd /root
+
+       rpm -ivh https://download.postgresql.org/pub/repos/yum/9.3/redhat/rhel-7-x86_64/pgdg-centos93-9.3-3.noarch.rpm
+       yum install -y postgresql93 postgresql93-server postgresql93-libs postgresql93-contrib wget net-tools krb5-libs krb5-workstation
+       yum install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common samba-common-tools ntpdate ntp authconfig krb5-workstation krb5-libs pam_krb5 openldap* nc nscd
+
+       \\cp /vagrant_shared/hosts /etc/hosts
+       ulimit -n 10000
+       echo 1 > /proc/sys/vm/swappiness
+       printf "\nvm.swappiness=1\n" >> /etc/sysctl.conf
+
+       ssh-keygen -t rsa -P "" -f ~/.ssh/id_dsa
+       \\cp ~/.ssh/id_dsa.pub /vagrant_shared/dat#{i}.pub
+
+       \\cp /vagrant_shared/ldap.conf /etc/openldap/ldap.conf
+       \\cp /vagrant_shared/krb5.conf /etc/krb5.conf
+
+       chmod +x /vagrant_shared/*.sh
+       
+       wget -nv http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.6.2.2/ambari.repo -O /etc/yum.repos.d/ambari.repo
+       yum install -y ambari-agent
+       \\cp /vagrant_shared/ambari-agent.ini /etc/ambari-agent/conf/ambari-agent.ini
+      SHELL
+    end
+       
+  end
+
+  config.vm.define "mst1" do |node|
+    node.vm.box = "centos/7"
+    node.vm.provider "virtualbox" do |vb|
+       # Display the VirtualBox GUI when booting the machine
+       # vb.gui = true
+    
+       # Customize the amount of memory on the VM:
+       vb.memory = "8192"
+    end
+    node.vm.hostname = "mst1"
+    node.disksize.size = "50GB"
+    node.vm.synced_folder "Shared", "/vagrant_shared"
+    node.vm.network "public_network"
+    node.vm.network "private_network", ip: "10.0.0.30", virtualbox__intnet: true
+    node.vm.provision :shell, env: { "buildNumber" => "2.6.5.0" }, inline: <<-SHELL
+     sudo su
+     cd /root
+     
+     rpm -ivh https://download.postgresql.org/pub/repos/yum/9.3/redhat/rhel-7-x86_64/pgdg-centos93-9.3-3.noarch.rpm
+     yum install -y postgresql93 postgresql93-server postgresql93-libs postgresql93-contrib wget net-tools krb5-libs krb5-workstation
+     yum install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common samba-common-tools ntpdate ntp authconfig krb5-workstation krb5-libs pam_krb5 openldap* nc nscd
+
+     /usr/pgsql-9.3/bin/postgresql93-setup initdb
+     systemctl start postgresql-9.3.service
+     \\cp /vagrant_shared/pg_hba.conf /var/lib/pgsql/9.3/data/pg_hba.conf
+     \\cp /vagrant_shared/postgresql.conf /var/lib/pgsql/9.3/data/postgresql.conf
+     systemctl restart postgresql-9.3.service
+
+     \\cp /vagrant_shared/hosts /etc/hosts
+     ulimit -n 10000
+     echo 1 > /proc/sys/vm/swappiness
+     printf "\nvm.swappiness=1\n" >> /etc/sysctl.conf
+
+     ssh-keygen -t rsa -P "" -f ~/.ssh/id_dsa
+     \\cp ~/.ssh/id_dsa.pub /vagrant_shared/mst1.pub
+
+     \\cp /vagrant_shared/ldap.conf /etc/openldap/ldap.conf
+     \\cp /vagrant_shared/krb5.conf /etc/krb5.conf
+
+     chmod +x /vagrant_shared/*.sh
+
+     wget -nv http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.6.2.2/ambari.repo -O /etc/yum.repos.d/ambari.repo
+     yum install -y ambari-server
+
+     \\cp /vagrant_shared/ambari-agent.ini /etc/ambari-agent/conf/ambari-agent.ini
+     sudo -u postgres psql -f /vagrant_shared/ambari-setup.sql postgres
+     \\cp /var/lib/ambari-server/resources/Ambari-DDL-Postgres-CREATE.sql .
+     export PGPASSWORD="ambaripw"
+     psql -U ambari -c "\\ir Ambari-DDL-Postgres-CREATE.sql"
+
+     ambari-server setup -s --database=postgres --databaseusername=ambari --databasepassword=ambaripw --databasehost=localhost --databaseport=5432 --databasename=ambari --version=2.6.3.0
+     ambari-server setup --jdbc-db=postgres --jdbc-driver=/usr/lib/ambari-server/postgresql-9.3-1101-jdbc4.jar
+     ambari-server start
+    SHELL
+  end
+end
