@@ -3,7 +3,7 @@
 \cp /vagrant_shared/dhclient.conf /etc/dhcp/dhclient.conf
 service network restart
 
-realm join -v --user=vagrant@DAVIDMCGINNIS.NET --automatic-id-mapping=yes --computer-ou="OU=COMPUTERS,OU=SHAW,OU=HADOOP,DC=DAVIDMCGINNIS,DC=NET" AD.DAVIDMCGINNIS.NET
+realm join -v --user=vagrant@DAVIDMCGINNIS.NET --automatic-id-mapping=yes --computer-ou="OU=COMPUTERS,OU=GENERIC,OU=HADOOP,DC=DAVIDMCGINNIS,DC=NET" AD.DAVIDMCGINNIS.NET
 authconfig --enablesssd --enablesssdauth --enablelocauthorize  --enablemkhomedir --updateall
 \cp /vagrant_shared/nscd.conf /etc/nscd.conf
        

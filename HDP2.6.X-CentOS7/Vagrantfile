@@ -48,6 +48,7 @@ Vagrant.configure("2") do |config|
        wget -nv http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.6.2.2/ambari.repo -O /etc/yum.repos.d/ambari.repo
        yum install -y ambari-agent
        \\cp /vagrant_shared/ambari-agent.ini /etc/ambari-agent/conf/ambari-agent.ini
+       \\cp /vagrant_shared/cert-verification.cfg /etc/python/cert-verification.cfg
       SHELL
     end
        
@@ -94,10 +95,18 @@ Vagrant.configure("2") do |config|
 
      chmod +x /vagrant_shared/*.sh
 
+     curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+     python get-pip.py
+     pip install pyopenssl ndg-httpsclient pyasn1
+
+     wget -nv http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.6.2.2/ambari.repo -O /etc/yum.repos.d/ambari.repo
+     yum install -y ambari-agent
+     \\cp /vagrant_shared/ambari-agent.ini /etc/ambari-agent/conf/ambari-agent.ini
+     \\cp /vagrant_shared/cert-verification.cfg /etc/python/cert-verification.cfg
+
      wget -nv http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.6.2.2/ambari.repo -O /etc/yum.repos.d/ambari.repo
      yum install -y ambari-server
 
-     \\cp /vagrant_shared/ambari-agent.ini /etc/ambari-agent/conf/ambari-agent.ini
      sudo -u postgres psql -f /vagrant_shared/ambari-setup.sql postgres
      \\cp /var/lib/ambari-server/resources/Ambari-DDL-Postgres-CREATE.sql .
      export PGPASSWORD="ambaripw"
@@ -105,6 +114,7 @@ Vagrant.configure("2") do |config|
 
      ambari-server setup -s --database=postgres --databaseusername=ambari --databasepassword=ambaripw --databasehost=localhost --databaseport=5432 --databasename=ambari --version=2.6.3.0
      ambari-server setup --jdbc-db=postgres --jdbc-driver=/usr/lib/ambari-server/postgresql-9.3-1101-jdbc4.jar
+
      ambari-server start
     SHELL
   end
