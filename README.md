@@ -1,5 +1,8 @@
-# HadoopOnVagrant
-Collection of vagrant boxes which makes setting up a mini-cluster simple
+# Hadoop On Vagrant
+This repo contains a collection of vagrant boxes which have come in handy while developing for Hadoop. Each box has its own README with information about that box, and each has its own folder below this directory. Some of the goals of these boxes include:
+* Setting up a multi-node Hadoop cluster using VMs
+* Setting up an Active Directory or Kerberos node to authenticate against
+* Setting up a Linux node capable of compiling Hadoop components
 
 ## Prerequisites
 * Vagrant (Tested on versions 2.2.X)
