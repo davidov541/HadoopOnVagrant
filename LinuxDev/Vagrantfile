@@ -6,41 +6,41 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-	config.vm.define "linuxdev" do |node|
-      node.vm.box = "centos/7"
-      node.vm.provider "virtualbox" do |vb|
-         # Display the VirtualBox GUI when booting the machine
-         # vb.gui = true
+  config.vm.define "linuxdev" do |node|
+    node.vm.box = "centos/7"
+    node.vm.provider "virtualbox" do |vb|
+    # Display the VirtualBox GUI when booting the machine
+    # vb.gui = true
       
-         # Customize the amount of memory on the VM:
-         vb.memory = "1024"
-      end
-      node.vm.hostname = "linuxdev"
-      node.disksize.size = "50GB"
-      node.vm.synced_folder "Shared", "/vagrant_shared"
-      node.vm.network "public_network"
-      node.vm.network "private_network", ip: "10.0.0.50", virtualbox__intnet: true
-	  node.vm.provision :shell, inline: <<-SHELL
-	   sudo su
-	   cd /root
+    # Customize the amount of memory on the VM:
+    vb.memory = "1024"
+  end
+  node.vm.hostname = "linuxdev"
+  node.disksize.size = "50GB"
+  node.vm.synced_folder "Shared", "/vagrant_shared"
+  node.vm.network "public_network"
+  node.vm.network "private_network", ip: "10.0.0.50", virtualbox__intnet: true
+  node.vm.provision :shell, inline: <<-SHELL
+   sudo su
+   cd /root
 
-	   yum -y install https://centos7.iuscommunity.org/ius-release.rpm
-	   yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-	   yum -y install epel-release python36u python36u-dev npm wget net-tools krb5-libs krb5-workstation git krb5-devel git docker-ce protobuf-compiler patch openldap*
-	   yum -y install python36u-pip
+   yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+   yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+   yum -y install epel-release python36u python36u-dev npm wget net-tools krb5-libs krb5-workstation git krb5-devel git docker-ce protobuf-compiler patch openldap*
+   yum -y install python36u-pip
 
-	   wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
-	   yum -y install apache-maven
+   wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
+   yum -y install apache-maven
 
-       \\cp /vagrant_shared/ldap.conf /etc/openldap/ldap.conf
-       \\cp /vagrant_shared/krb5.conf /etc/krb5.conf
+   \\cp /vagrant_shared/ldap.conf /etc/openldap/ldap.conf
+   \\cp /vagrant_shared/krb5.conf /etc/krb5.conf
 
-	   git config --global user.name "David McGinnis"
-	   git config --global user.email "656337+davidov541@users.noreply.github.com"
+   git config --global user.name "David McGinnis"
+   git config --global user.email "656337+davidov541@users.noreply.github.com"
 
-	   systemctl start docker
+   systemctl start docker
 
-	   printf '\nexport MAVEN_OPTS="-Xmx1G -XX:MaxPermSize=256m"\n' >> /etc/bashrc
-	  SHELL
-	end
+   printf '\nexport MAVEN_OPTS="-Xmx1G -XX:MaxPermSize=256m"\n' >> /etc/bashrc
+  SHELL
+  end
 end
