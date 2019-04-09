@@ -5,8 +5,31 @@ Collection of vagrant boxes which makes setting up a mini-cluster simple
 * Vagrant (Tested on versions 2.2.X)
 * VirtualBox
 * vagrant-disksize plugin
+* vagrant-vbguest plugin
 
 ## FAQs
+**Q: I cannot run the vagrant boxes due to an error about not having guest additions in the base image**
+A: Some of the vagrant images are based on the centos/7 vagrant box, which does not have the guest additions included. Most of the boxes in this collection require at least being able to share a folder between host and guest, so these additions are critical for things to work properly. You should see an error similar to the following if this is your issue:
+```
+Vagrant was unable to mount VirtualBox shared folders. This is usually
+because the filesystem "vboxsf" is not available. This filesystem is
+made available via the VirtualBox Guest Additions and kernel module.
+Please verify that these guest additions are properly installed in the
+guest. This is not a bug in Vagrant and is usually caused by a faulty
+Vagrant box. For context, the command attempted was:
+
+mount -t vboxsf -o uid=1000,gid=1000 vagrant_shared /vagrant_shared
+
+The error output from the command was:
+
+mount: unknown filesystem type 'vboxsf'
+```
+
+If this is the issue, run the following command, to install the vagrant-vbguest plugin.
+```
+vagrant plugin install vagrant-vbguest
+```
+
 **Q: I cannot run some vagrant boxes due to an error about disksize**
 
 A: Some of the vagrant images in this collection make use of the vagrant-disksize plugin. If this plugin is not installed, you will see an error such as the following when you try to run *vagrant up*
