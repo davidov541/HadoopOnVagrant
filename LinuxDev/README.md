@@ -5,5 +5,4 @@ This box also is set up to be able to kinit against the AD or KDC boxes, if they
 
 ## Necessary Changes to Use
 There are a few changes that should likely be done to use this vagrant box.
-* Change the git information in the vagrant file to have your name and your email address in it.
 * The krb5.conf and ldap.conf files should be updated accordingly to match your Kerberos environment.
