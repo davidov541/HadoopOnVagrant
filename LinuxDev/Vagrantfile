@@ -14,6 +14,7 @@ Vagrant.configure("2") do |config|
   node.vm.hostname = "linuxdev"
   node.disksize.size = "50GB"
   node.vm.synced_folder "Shared", "/vagrant_shared"
+  node.vm.synced_folder "../common", "/vagrant_common"
   node.vm.network "public_network"
   node.vm.network "private_network", ip: "10.0.0.50", virtualbox__intnet: true
   node.vm.provision :shell, inline: <<-SHELL
@@ -32,8 +33,8 @@ Vagrant.configure("2") do |config|
    pip install --upgrade pip
    pip install shyaml
    
-   gitName=$(cat /vagrant_shared/config.yaml | shyaml get-value git.name)
-   gitEmail=$(cat /vagrant_shared/config.yaml | shyaml get-value git.email)
+   gitName=$(cat /vagrant_common/config.yaml | shyaml get-value git.name)
+   gitEmail=$(cat /vagrant_common/config.yaml | shyaml get-value git.email)
 
    \\cp /vagrant_shared/ldap.conf /etc/openldap/ldap.conf
    \\cp /vagrant_shared/krb5.conf /etc/krb5.conf
