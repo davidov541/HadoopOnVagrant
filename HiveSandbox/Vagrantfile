@@ -1,0 +1,54 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  config.vm.define "hivesandbox" do |node|
+    node.vm.box = "centos/7"
+    node.vm.provider "virtualbox" do |vb|
+    vb.memory = "1024"
+  end
+  node.vm.hostname = "hivesandbox"
+  node.disksize.size = "50GB"
+  node.vm.synced_folder "Shared", "/vagrant_shared"
+  node.vm.network "public_network"
+  node.vm.network "private_network", ip: "10.0.0.51", virtualbox__intnet: true
+  node.vm.provision :shell, inline: <<-SHELL
+    sudo su
+    cd /root
+
+    yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+    yum -y install epel-release python36u python36u-dev npm wget net-tools krb5-libs krb5-workstation krb5-devel git protobuf-compiler patch openldap*
+    yum -y install python36u-pip
+
+    mkdir /grid
+    pushd /grid
+    wget http://mirrors.ocf.berkeley.edu/apache/hadoop/common/hadoop-3.1.1/hadoop-3.1.1.tar.gz
+    tar zxf hadoop-3.1.1.tar.gz
+    
+    \\cp /vagrant_shared/hive.tar.gz .
+    tar zxf hive.tar.gz
+    popd
+
+    mkdir /root/hdfs-scratch
+    mkdir -p /user/hive/warehouse
+    mkdir /tmp/hive
+    chmod 777 /tmp/hive
+
+    groupadd hive
+    useradd -g hive --shell=/bin/bash -m -d /home/hive hive
+
+    \\cp /vagrant_shared/runHive.sh /user/hive/
+    chmod 744 /user/hive/runHive.sh
+
+    chown -R hive /user/hive/
+    chgrp -R hive /user/hive/
+
+    \\cp /vagrant_shared/ldap.conf /etc/openldap/ldap.conf
+    \\cp /vagrant_shared/krb5.conf /etc/krb5.conf
+  SHELL
+  end
+end
