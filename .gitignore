@@ -2,3 +2,4 @@
 *.pub
 HiveSandbox/Shared/hive.tar.gz
 common/config.yaml
+*.patch
