@@ -9,10 +9,6 @@ Vagrant.configure("2") do |config|
   config.vm.define "linuxdev" do |node|
     node.vm.box = "centos/7"
     node.vm.provider "virtualbox" do |vb|
-    # Display the VirtualBox GUI when booting the machine
-    # vb.gui = true
-      
-    # Customize the amount of memory on the VM:
     vb.memory = "1024"
   end
   node.vm.hostname = "linuxdev"
@@ -32,11 +28,18 @@ Vagrant.configure("2") do |config|
    wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
    yum -y install apache-maven
 
+   ln -s /bin/pip3.6 /bin/pip
+   pip install --upgrade pip
+   pip install shyaml
+   
+   gitName=$(cat /vagrant_shared/config.yaml | shyaml get-value git.name)
+   gitEmail=$(cat /vagrant_shared/config.yaml | shyaml get-value git.email)
+
    \\cp /vagrant_shared/ldap.conf /etc/openldap/ldap.conf
    \\cp /vagrant_shared/krb5.conf /etc/krb5.conf
 
-   git config --global user.name "David McGinnis"
-   git config --global user.email "656337+davidov541@users.noreply.github.com"
+   git config --global user.name "$gitName"
+   git config --global user.email "$gitEmail"
 
    systemctl start docker
 
