@@ -1,3 +1,8 @@
 git:
     name: "Name"
     email: "Email"
+kerberos:
+    enabled: "false"
+active_directory:
+    enabled: "false"
+
