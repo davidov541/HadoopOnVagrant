@@ -50,7 +50,7 @@ Vagrant.configure("2") do |config|
         chown -R hive /user/hive/
         chgrp -R hive /user/hive/
 
-        ./setupAuthentication.sh
+        /vagrant_common/setupAuthentication.sh
         SHELL
     end
 end

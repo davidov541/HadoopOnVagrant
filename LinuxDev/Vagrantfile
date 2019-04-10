@@ -38,7 +38,7 @@ Vagrant.configure("2") do |config|
         gitName=$(cat /vagrant_common/config.yaml | shyaml get-value git.name)
         gitEmail=$(cat /vagrant_common/config.yaml | shyaml get-value git.email)
 
-        ./setupAuthentication.sh
+        /vagrant_common/setupAuthentication.sh
 
         git config --global user.name "$gitName"
         git config --global user.email "$gitEmail"

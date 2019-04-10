@@ -3,6 +3,9 @@ git:
     email: "Email"
 kerberos:
     enabled: "false"
+    domain: ""
+    server: ""
 active_directory:
     enabled: "false"
-
+    realm: ""
+    server: ""

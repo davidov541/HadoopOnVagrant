@@ -1,0 +1,5 @@
+
+    ${domain} = {
+        kdc = ${server}
+        admin_server = ${adminServer}
+    }
