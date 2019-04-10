@@ -3,8 +3,7 @@ kdcEnable=$(cat /vagrant_common/config.yaml | shyaml get-value kerberos.enabled 
 adEnable=$(cat /vagrant_common/config.yaml | shyaml get-value active_directory.enabled | tr '[:upper:]' '[:lower:]')
 
 if [[ "$kdcEnable" == "true" || "$adEnable" == "true" ]]; then
-    yum -y install krb5-libs krb5-workstation krb5-devel openldap*
-    cp -f /vagrant_common/ldap.conf /etc/openldap/ldap.conf
+    yum -y install krb5-libs krb5-workstation krb5-devel 
     cp -f /vagrant_common/krb5.conf /etc/krb5.conf
     if [[ "$adEnable" == "true" ]]; then
         adRealm=$(cat /vagrant_common/config.yaml | shyaml get-value active_directory.realm | tr '[:upper:]' '[:lower:]')
@@ -24,4 +23,12 @@ if [[ "$kdcEnable" == "true" || "$adEnable" == "true" ]]; then
         cat ~/kdc.realm >> /etc/krb5.conf
         sed -i "s/\${domain}/$kdcDomain/g" /etc/krb5.conf
     fi
+fi
+
+ldapEnable=$(cat /vagrant_common/config.yaml | shyaml get-value ldap.enabled | tr '[:upper:]' '[:lower:]')
+if [[ "$ldapEnable" == "true" ]]; then
+    yum -y install openldap*
+    cp -f /vagrant_common/ldap.conf /etc/openldap/ldap.conf
+    ldapServer=$(cat /vagrant_common/config.yaml | shyaml get-value ldap.server | tr '[:upper:]' '[:lower:]')
+    sed -i "s/\${server}/$ldapServer/g" /etc/openldap/ldap.conf
 fi

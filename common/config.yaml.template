@@ -9,3 +9,6 @@ active_directory:
     enabled: "false"
     realm: ""
     server: ""
+ldap:
+    enabled: "false"
+    server: ""
