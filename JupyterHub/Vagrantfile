@@ -6,49 +6,50 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.define "jupyterhub" do |node|
-    node.vm.box = "centos/7"
-    node.vm.provider "virtualbox" do |vb|
-      # Display the VirtualBox GUI when booting the machine
-      # vb.gui = true
+    config.vm.define "jupyterhub" do |node|
+        node.vm.box = "centos/7"
+        node.vm.provider "virtualbox" do |vb|
+            # Display the VirtualBox GUI when booting the machine
+            # vb.gui = true
 
-      # Customize the amount of memory on the VM:
-      vb.memory = "2048"
+            # Customize the amount of memory on the VM:
+            vb.memory = "2048"
+        end
+        node.vm.hostname = "jupyterhub"
+        node.disksize.size = "50GB"
+        node.vm.synced_folder "Shared", "/vagrant_shared"
+        node.vm.synced_folder "../common", "/vagrant_common"
+        node.vm.network "public_network"
+        node.vm.network "private_network", ip: "10.0.0.40", virtualbox__intnet: true
+        node.vm.provision :shell, inline: <<-SHELL
+        sudo su
+        cd /root
+
+        yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+        yum -y install epel-release python36u python36u-dev python36u-devel npm wget net-tools krb5-libs krb5-workstation git krb5-devel
+        yum -y install python36u-pip
+
+        ln -s /bin/pip3.6 /bin/pip
+        pip install --upgrade pip
+        pip install jupyterhub
+        npm install -g configurable-http-proxy
+        pip install notebook
+        pip install kerberos
+        pip install shyaml
+
+        cp /vagrant_shared/hosts /etc/hosts
+        ulimit -n 10000
+        echo 1 > /proc/sys/vm/swappiness
+        printf "\nvm.swappiness=1\n" >> /etc/sysctl.conf
+
+        chmod +x /vagrant_*/*.sh
+
+        /vagrant_common/setupAuthentication.sh
+
+        cd /tmp
+        \\cp /vagrant_shared/auth.py /usr/lib/python3.6/site-packages/jupyterhub/auth.py
+        \\cp /vagrant_shared/jupyterhub_config.py .
+        ifconfig | grep "192.168"
+        SHELL
     end
-    node.vm.hostname = "jupyterhub"
-    node.disksize.size = "50GB"
-    node.vm.synced_folder "Shared", "/vagrant_shared"
-    node.vm.synced_folder "../common", "/vagrant_common"
-    node.vm.network "public_network"
-    node.vm.network "private_network", ip: "10.0.0.40", virtualbox__intnet: true
-    node.vm.provision :shell, inline: <<-SHELL
-    sudo su
-    cd /root
-
-    yum -y install https://centos7.iuscommunity.org/ius-release.rpm
-    yum -y install epel-release python36u python36u-dev npm wget net-tools krb5-libs krb5-workstation git krb5-devel
-    yum -y install python36u-pip
-
-    python3.6 -m pip install --upgrade pip
-    python3.6 -m pip install jupyterhub
-    npm install -g configurable-http-proxy
-    python3.6 -m pip install notebook
-    python3.6 -m pip install kerberos
-
-    cp /vagrant_shared/hosts /etc/hosts
-    ulimit -n 10000
-    echo 1 > /proc/sys/vm/swappiness
-    printf "\nvm.swappiness=1\n" >> /etc/sysctl.conf
-
-    chmod +x /vagrant_shared/*.sh
-
-    \\cp /vagrant_common/ldap.conf /etc/openldap/ldap.conf
-    \\cp /vagrant_common/krb5.conf /etc/krb5.conf
-
-    cd /tmp
-    \\cp /vagrant_shared/auth.py /usr/lib/python3.6/site-packages/jupyterhub/auth.py
-    \\cp /vagrant_shared/jupyterhub_config.py .
-    KRB5_CONFIG=/etc/krb5.conf jupyterhub -f jupyterhub_config.py
-    SHELL
-  end
 end

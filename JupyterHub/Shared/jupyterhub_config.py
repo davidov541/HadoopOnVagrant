@@ -79,8 +79,8 @@ import sys; print(sys.path)
 #  - takes two arguments: (handler, data),
 #    where `handler` is the calling web.RequestHandler,
 #    and `data` is the POST form data from the login page.
-#c.JupyterHub.authenticator_class = 'jupyterhub.auth.PAMAuthenticator'
-c.JupyterHub.authenticator_class = 'KDCAuthenticator'
+c.JupyterHub.authenticator_class = 'jupyterhub.auth.PAMAuthenticator'
+#c.JupyterHub.authenticator_class = 'KDCAuthenticator'
 
 ## The base URL of the entire application.
 #  
