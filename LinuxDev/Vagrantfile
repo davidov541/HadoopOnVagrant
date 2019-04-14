@@ -9,42 +9,42 @@ Vagrant.configure("2") do |config|
   config.vm.define "linuxdev" do |node|
     node.vm.box = "centos/7"
     node.vm.provider "virtualbox" do |vb|
-    vb.memory = "1024"
-  end
-  node.vm.hostname = "linuxdev"
-  node.disksize.size = "50GB"
-  node.vm.synced_folder "Shared", "/vagrant_shared"
-  node.vm.synced_folder "../common", "/vagrant_common"
-  node.vm.network "public_network"
-  node.vm.network "private_network", ip: "10.0.0.50", virtualbox__intnet: true
-  node.vm.provision :shell, inline: <<-SHELL
-   sudo su
-   cd /root
+      vb.memory = "1024"
+    end
+    node.vm.hostname = "linuxdev"
+    node.disksize.size = "50GB"
+    node.vm.synced_folder "Shared", "/vagrant_shared"
+    node.vm.synced_folder "../common", "/vagrant_common"
+    node.vm.network "public_network"
+    node.vm.network "private_network", ip: "10.0.0.50", virtualbox__intnet: true
+    node.vm.provision :shell, inline: <<-SHELL
+     sudo su
+     cd /root
 
-   yum -y install https://centos7.iuscommunity.org/ius-release.rpm
-   yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-   yum -y install epel-release python36u python36u-dev npm wget net-tools krb5-libs krb5-workstation git krb5-devel git docker-ce protobuf-compiler patch openldap*
-   yum -y install python36u-pip
+     yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+     yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+     yum -y install epel-release python36u python36u-dev npm wget net-tools krb5-libs krb5-workstation git krb5-devel git docker-ce protobuf-compiler patch openldap*
+     yum -y install python36u-pip
 
-   wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
-   yum -y install apache-maven
+     wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
+     yum -y install apache-maven
 
-   ln -s /bin/pip3.6 /bin/pip
-   pip install --upgrade pip
-   pip install shyaml
-   
-   gitName=$(cat /vagrant_common/config.yaml | shyaml get-value git.name)
-   gitEmail=$(cat /vagrant_common/config.yaml | shyaml get-value git.email)
+     ln -s /bin/pip3.6 /bin/pip
+     pip install --upgrade pip
+     pip install shyaml
+     
+     gitName=$(cat /vagrant_common/config.yaml | shyaml get-value git.name)
+     gitEmail=$(cat /vagrant_common/config.yaml | shyaml get-value git.email)
 
-   \\cp /vagrant_shared/ldap.conf /etc/openldap/ldap.conf
-   \\cp /vagrant_shared/krb5.conf /etc/krb5.conf
+     \\cp /vagrant_shared/ldap.conf /etc/openldap/ldap.conf
+     \\cp /vagrant_shared/krb5.conf /etc/krb5.conf
 
-   git config --global user.name "$gitName"
-   git config --global user.email "$gitEmail"
+     git config --global user.name "$gitName"
+     git config --global user.email "$gitEmail"
 
-   systemctl start docker
+     systemctl start docker
 
-   printf '\nexport MAVEN_OPTS="-Xmx1G -XX:MaxPermSize=256m"\n' >> /etc/bashrc
-  SHELL
+     printf '\nexport MAVEN_OPTS="-Xmx1G -XX:MaxPermSize=256m"\n' >> /etc/bashrc
+    SHELL
   end
 end
