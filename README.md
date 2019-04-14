@@ -10,6 +10,12 @@ This repo contains a collection of vagrant boxes which have come in handy while 
 * vagrant-disksize plugin
 * vagrant-vbguest plugin
 
+## Configuration
+The boxes all assume that there is a file at common/config.yaml which contains any configuration that may be modified. This file should be based off of the common/config.yaml.template file which is in the repo. THe config.yaml file itself is excluded from the repo, and should never be checked in. The following fields are expected to be in the configuration file:
+* **git.name:** Your name, which will show up on any git checkins from any of the boxes.
+* **git.email:** Your email address, which will be placed on any git checkins from any of the boxes. This may need to be an anonymous email address, if your GitHub account is set up that way.
+* **kerberos.enabled:** If set to true, then the other settings under kerberos will be used to connect the box to a MIT KDC. This is independent of whether the box is connected to Active Directory (meaning that as long as both systems use separate domains, they can both be set up). This value is case-insensitive, and is expected to be "true" or "false".
+* **active_directory.enabled:** If set to true, then the other settings under active_directory will be used to connect the box to an AD realm. This is independent of whether the box is connected to an MIT KDC (meaning that as long as both systems use separate domains, they can both be set up). This value is case-insensitive, and is expected to be "true" or "false".
 ## FAQs
 **Q: I cannot run the vagrant boxes due to an error about not having guest additions in the base image**
 A: Some of the vagrant images are based on the centos/7 vagrant box, which does not have the guest additions included. Most of the boxes in this collection require at least being able to share a folder between host and guest, so these additions are critical for things to work properly. You should see an error similar to the following if this is your issue:
