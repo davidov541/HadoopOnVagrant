@@ -187,7 +187,7 @@ c.JupyterHub.authenticator_class = 'jupyterhub.auth.PAMAuthenticator'
 ## DEPRECATED: use output redirection instead, e.g.
 #  
 #  jupyterhub &>> /var/log/jupyterhub.log
-#c.JupyterHub.extra_log_file = ''
+# c.JupyterHub.extra_log_file = ''
 
 ## Extra log handlers to set on JupyterHub logger
 #c.JupyterHub.extra_log_handlers = []
