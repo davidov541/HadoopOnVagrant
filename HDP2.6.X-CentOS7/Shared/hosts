@@ -1,8 +1,6 @@
-10.0.0.30	mst1.davidmcginnis.net	mst1
-10.0.0.21	dat1.davidmcginnis.net	dat1
-10.0.0.22	dat2.davidmcginnis.net	dat2
-10.0.0.11	ad.davidmcginnis.net	ad
-192.168.128.176	kdc.davidmcginnis.net	kdc
+10.0.0.30	mst1.test.hadoop.com	mst1
+10.0.0.21	dat1.test.hadoop.com	dat1
+10.0.0.22	dat2.test.hadoop.com	dat2
 127.0.0.1	localhost
 
 # The following lines are desirable for IPv6 capable hosts

@@ -18,6 +18,6 @@ CREATE DATABASE oozie;
 CREATE USER oozie WITH PASSWORD 'ooziepw'; 
 GRANT ALL PRIVILEGES ON DATABASE oozie TO oozie; 
 \connect oozie; 
-CREATE SCHEMA hive AUTHORIZATION oozie; 
+CREATE SCHEMA oozie AUTHORIZATION oozie; 
 ALTER SCHEMA oozie OWNER TO oozie; 
 ALTER ROLE oozie SET search_path TO 'oozie', 'public';

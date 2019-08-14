@@ -21,13 +21,18 @@ Vagrant.configure("2") do |config|
         sudo su
         cd /root
 
+        curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
+
         yum -y install https://centos7.iuscommunity.org/ius-release.rpm
         yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-        yum -y install epel-release python36u python36u-dev npm wget net-tools git docker-ce protobuf-compiler patch
+        yum -y install epel-release python36u python36u-dev npm wget net-tools git docker-ce protobuf-compiler patch sbt
         yum -y install python36u-pip
 
         wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
         yum -y install apache-maven
+
+        wget https://downloads.lightbend.com/scala/2.12.8/scala-2.12.8.rpm
+        yum -y install scala-2.12.8.rpm
 
         ln -s /bin/pip3.6 /bin/pip
         pip install --upgrade pip
