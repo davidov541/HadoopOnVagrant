@@ -14,7 +14,7 @@ Make sure to use the createCluster script in order to create the box. This runs 
 
 Once this file is run, both FreeIPA and Ambari will be running on the master node, but HDP will still not be installed. 
 
-The first step necessary is to get the IP address from the ifconfig output that ends the output. On my machine, this is always the 192.168.*.* IP address, but may differ on different systems. If in doubt, try different ones until you find the IP address accessible from your host. From now on, the IP address of the master node will be denoted by $IP.
+The first step necessary is to get the IP address from the ifconfig output that ends the output. On my machine, this is always the 192.168.X.X IP address, but may differ on different systems. If in doubt, try different ones until you find the IP address accessible from your host. From now on, the IP address of the master node will be denoted by $IP.
 
 The installation portion must be done manually, by going to http://$IP:8888. Note this is different than the default port for Ambari, since it conflicted with the default port for FreeIPA.
 
