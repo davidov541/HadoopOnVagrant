@@ -1,9 +1,9 @@
-# HDP 2.6.X Cluster Built on CentOS7
+# HDP 3.X Cluster Built on CentOS7
 ## Description
-This vagrant file sets up a 3 node cluster running CentOS7 and HDP 2.6.X. As currently configured, the following nodes are created:
+This vagrant file sets up a 3 node cluster running CentOS7 and HDP 3.X. As currently configured, the following nodes are created:
 1. mst1.test.hadoop.com - Master node with 8 GB of RAM and 1 core
-2. dat1.test.hadoop.com - Data node with 4 GB of RAM and 1 core
-3. dat2.test.hadoop.com - Data node with 4 GB of RAM and 1 core
+2. dat1.test.hadoop.com - Data node with 8 GB of RAM and 2 cores
+3. dat2.test.hadoop.com - Data node with 8 GB of RAM and 2 cores
 
 These values are flexible, and can be modified as required. More data nodes or master nodes can be created, as your system will allow.
 
@@ -18,10 +18,12 @@ The first step necessary is to get the IP address from the ifconfig output that 
 
 The installation portion must be done manually, by going to http://$IP:8888. Note this is different than the default port for Ambari, since it conflicted with the default port for FreeIPA.
 
-Most of the directions located [here](https://docs.hortonworks.com/HDPDocuments/Ambari-2.6.2.2/bk_ambari-installation/content/log_in_to_apache_ambari.html).
+Most of the directions located [here](https://docs.cloudera.com/HDPDocuments/Ambari-2.7.3.0/bk_ambari-installation/content/log_in_to_apache_ambari.html).
 
 The private SSH key for the master root user is printed out at the end of the creation of the cluster. On some terminals, I've seen issues with SSH not working when registering hosts. In these instances, pasting the key to a text editor like Sublime before copying and pasting into the window helped fix whatever unprintable characters were causing issues.
 
 We have set up a PostgreSQL database for use with Ambari, so for the following services, use the existing PostgreSQL option, point it to the master node, and use the indicated credentials.
 * Hive - Password: hivepw
 * Oozie - Password: ooziepw
+
+As of Ambari 2.7.5 and HDP 3.1.5, the built versions of both are kept behind a paywall. For that reason, this version uses Ambari 2.7.4. This version of Ambari can work with HDP 3.1.5 (and defaults to using it), so you may use that stack version if you have credentials for that version. Otherwise, you'll need to update the version to HDP 3.1.4.
