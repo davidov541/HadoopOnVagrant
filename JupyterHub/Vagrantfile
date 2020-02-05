@@ -29,13 +29,19 @@ Vagrant.configure("2") do |config|
         yum -y install epel-release python36u python36u-dev python36u-devel npm wget net-tools krb5-libs krb5-workstation git krb5-devel
         yum -y install python36u-pip
 
-        ln -s /bin/pip3.6 /bin/pip
-        pip install --upgrade pip
-        pip install jupyterhub
+        python3 -m venv /opt/jupyterhub/
+        /opt/jupyterhub/bin/python3 -m pip install --upgrade pip
+        /opt/jupyterhub/bin/python3 -m pip install wheel
+        /opt/jupyterhub/bin/python3 -m pip install jupyterhub jupyterlab
         npm install -g configurable-http-proxy
-        pip install notebook
-        pip install kerberos
-        pip install shyaml
+
+        mkdir -p /opt/jupyterhub/etc/jupyterhub/
+        \\cp /vagrant_shared/jupyterhub_config.py /opt/jupyterhub/etc/jupyterhub/
+        \\cp /vagrant_shared/jupyterhub.service /etc/systemd/system/jupyterhub.service
+
+        systemctl daemon-reload
+        systemctl enable jupyterhub.service
+        systemctl start jupyterhub.service
 
         cp /vagrant_shared/hosts /etc/hosts
         ulimit -n 10000
@@ -43,12 +49,6 @@ Vagrant.configure("2") do |config|
         printf "\nvm.swappiness=1\n" >> /etc/sysctl.conf
 
         chmod +x /vagrant_*/*.sh
-
-        /vagrant_common/setupAuthentication.sh
-
-        cd /tmp
-        \\cp /vagrant_shared/auth.py /usr/lib/python3.6/site-packages/jupyterhub/auth.py
-        \\cp /vagrant_shared/jupyterhub_config.py .
 
         useradd user
         echo "user:userpw" | chpasswd
