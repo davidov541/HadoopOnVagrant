@@ -93,6 +93,8 @@ Vagrant.configure("2") do |config|
      echo "client.api.port=8888" >> /etc/ambari-server/conf/ambari.properties
 
      ambari-server start
+
+     echo "done"
     SHELL
   end
 
@@ -104,7 +106,8 @@ Vagrant.configure("2") do |config|
          # vb.gui = true
       
          # Customize the amount of memory on the VM:
-         vb.memory = "4096"
+         vb.memory = "8192"
+         vb.cpus = 2
       end
       hostname = "dat#{i}.test.hadoop.com"
       node.vm.hostname = "#{hostname}"
@@ -142,6 +145,8 @@ Vagrant.configure("2") do |config|
        yum install -y ambari-agent
        \\cp /vagrant_shared/ambari-agent.ini /etc/ambari-agent/conf/ambari-agent.ini
        \\cp /vagrant_shared/cert-verification.cfg /etc/python/cert-verification.cfg
+
+       echo "done"
       SHELL
     end
   end
