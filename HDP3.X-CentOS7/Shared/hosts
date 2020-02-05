@@ -1,0 +1,13 @@
+10.0.0.30	mst1.test.hadoop.com	mst1
+10.0.0.21	dat1.test.hadoop.com	dat1
+10.0.0.22	dat2.test.hadoop.com	dat2
+127.0.0.1	localhost
+
+# The following lines are desirable for IPv6 capable hosts
+::1   ip6-localhost   ip6-loopback
+fe00::0		      ip6-localnet
+ff00::0		      ip6-mcastprefix
+ff02::1		      ip6-allnodes
+ff02::2		      ip6-allrouters
+ff02::3		      ip6-allhosts
+127.0.1.1	      ubuntu-xenial	ubuntu-xenial
