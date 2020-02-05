@@ -6,6 +6,7 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
+    config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
     config.vm.define "linuxdev" do |node|
         node.vm.box = "centos/7"
         node.vm.provider "virtualbox" do |vb|
@@ -13,8 +14,8 @@ Vagrant.configure("2") do |config|
         end
         node.vm.hostname = "linuxdev"
         node.disksize.size = "50GB"
-        node.vm.synced_folder "Shared", "/vagrant_shared"
-        node.vm.synced_folder "../common", "/vagrant_common"
+        node.vm.synced_folder "Shared", "/vagrant_shared", type: "virtualbox"
+        node.vm.synced_folder "../common", "/vagrant_common", type: "virtualbox"
         node.vm.network "public_network"
         node.vm.network "private_network", ip: "10.0.0.50", virtualbox__intnet: true
         node.vm.provision :shell, inline: <<-SHELL
@@ -34,11 +35,15 @@ Vagrant.configure("2") do |config|
         wget https://downloads.lightbend.com/scala/2.12.8/scala-2.12.8.rpm
         yum -y install scala-2.12.8.rpm
 
+        printf '\nexport MAVEN_OPTS="-Xmx1G -XX:MaxPermSize=256m"\n' >> /etc/bashrc
+
+        systemctl start docker
+
+        chmod +x /vagrant_*/*.sh
+
         ln -s /bin/pip3.6 /bin/pip
         pip install --upgrade pip
         pip install shyaml
-
-        chmod +x /vagrant_*/*.sh
 
         gitName=$(cat /vagrant_common/config.yaml | shyaml get-value git.name)
         gitEmail=$(cat /vagrant_common/config.yaml | shyaml get-value git.email)
@@ -47,10 +52,6 @@ Vagrant.configure("2") do |config|
 
         git config --global user.name "$gitName"
         git config --global user.email "$gitEmail"
-
-        systemctl start docker
-
-        printf '\nexport MAVEN_OPTS="-Xmx1G -XX:MaxPermSize=256m"\n' >> /etc/bashrc
         SHELL
     end
 end
