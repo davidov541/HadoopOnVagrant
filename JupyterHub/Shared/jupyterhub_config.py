@@ -94,7 +94,7 @@ c.JupyterHub.authenticator_class = 'jupyterhub.auth.PAMAuthenticator'
 ## The public facing URL of the whole JupyterHub application.
 #  
 #  This is the address on which the proxy will bind. Sets protocol, ip, base_url
-#c.JupyterHub.bind_url = 'http://:8000'
+c.JupyterHub.bind_url = 'http://:8000/'
 
 ## Whether to shutdown the proxy when the Hub shuts down.
 #  
@@ -557,7 +557,10 @@ c.JupyterHub.authenticator_class = 'jupyterhub.auth.PAMAuthenticator'
 #  Note that the spawner class' interface is not guaranteed to be exactly same
 #  across upgrades, so if you are using the callable take care to verify it
 #  continues to work after upgrades!
-#c.Spawner.environment = {}
+c.Spawner.environment = {
+	'PYSPARK_PYTHON': '/opt/jupyterhub/bin/python3',
+	'PYSPARK_DRIVER_PYTHON': '/opt/jupyterhub/bin/python3'
+}
 
 ## Timeout (in seconds) before giving up on a spawned HTTP server
 #  
