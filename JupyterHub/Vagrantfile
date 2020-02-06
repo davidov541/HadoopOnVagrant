@@ -18,7 +18,6 @@ Vagrant.configure("2") do |config|
         node.vm.hostname = "jupyterhub"
         node.disksize.size = "50GB"
         node.vm.synced_folder "Shared", "/vagrant_shared"
-        node.vm.synced_folder "../common", "/vagrant_common"
         node.vm.network "public_network"
         node.vm.network "private_network", ip: "10.0.0.40", virtualbox__intnet: true
         node.vm.provision :shell, inline: <<-SHELL
@@ -30,6 +29,8 @@ Vagrant.configure("2") do |config|
         yum -y install python36u-pip
 
         setsebool -P httpd_can_network_connect 1
+
+        version=2.1.3
 
         python3 -m venv /opt/jupyterhub/
         /opt/jupyterhub/bin/python3 -m pip install --upgrade pip
@@ -55,16 +56,17 @@ Vagrant.configure("2") do |config|
         echo "user:userpw" | chpasswd
 
         mkdir -p /usr/local/bin/apache-spark
-        wget https://archive.apache.org/dist/spark/spark-2.1.3/spark-2.1.3-bin-hadoop2.7.tgz
-        tar -xzvf spark-2.1.3-bin-hadoop2.7.tgz
-        mv spark-2.1.3-bin-hadoop2.7/* /usr/local/bin/apache-spark
+        wget https://archive.apache.org/dist/spark/spark-$version/spark-$version-bin-hadoop2.7.tgz
+        tar -xzvf spark-$version-bin-hadoop2.7.tgz
+        mv spark-$version-bin-hadoop2.7/* /usr/local/bin/apache-spark
 
         /opt/jupyterhub/bin/python3 -m pip install --upgrade toree
         /opt/jupyterhub/bin/jupyter toree install --spark_home=/usr/local/bin/apache-spark/ --interpreters=Scala,SQL
 
-        /opt/jupyterhub/bin/python3 -m pip install pyspark
+        /opt/jupyterhub/bin/python3 -m pip install "pyspark==$version"
 
-        ifconfig | grep "192.168"
+        ipAddress=$(ifconfig | grep --only-matching "192\.168\.[0-9]*\.[0-9]*" | head -n 1)
+        echo "Jupyter is now running at http://$ipAddress/"
         SHELL
     end
 end
