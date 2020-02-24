@@ -79,8 +79,22 @@ import sys; print(sys.path)
 #  - takes two arguments: (handler, data),
 #    where `handler` is the calling web.RequestHandler,
 #    and `data` is the POST form data from the login page.
-c.JupyterHub.authenticator_class = 'jupyterhub.auth.PAMAuthenticator'
+#c.JupyterHub.authenticator_class = 'jupyterhub.auth.PAMAuthenticator'
 #c.JupyterHub.authenticator_class = 'KDCAuthenticator'
+c.JupyterHub.authenticator_class = 'ldapauthenticator.LDAPAuthenticator'
+
+c.LDAPAuthenticator.server_hosts = ['jupyterhub.test.hadoop.com']
+c.LDAPAuthenticator.lookup_dn_search_user = 'admin'
+c.LDAPAuthenticator.lookup_dn_search_password = 'adminPassword'
+c.LDAPAuthenticator.user_search_base = 'cn=users,cn=accounts,dc=test,dc=hadoop,dc=com'
+c.LDAPAuthenticator.user_search_filter = '(&(objectClass=person)(uid={username}))'
+c.LDAPAuthenticator.user_membership_attribute = 'memberOf'
+c.LDAPAuthenticator.group_search_base = 'cn=groups,cn=accounts,dc=test,dc=hadoop,dc=com'
+c.LDAPAuthenticator.group_search_filter = '(&(objectClass=ipausergroup)(memberOf={group}))'
+c.LDAPAuthenticator.allow_nested_groups = True
+c.LDAPAuthenticator.username_pattern = '[a-zA-Z0-9_.][a-zA-Z0-9_.-]{0,252}[a-zA-Z0-9_.$-]?'
+c.LDAPAuthenticator.create_user_home_dir = True
+c.LDAPAuthenticator.create_user_home_dir_cmd = ['mkhomedir_helper']
 
 ## The base URL of the entire application.
 #  

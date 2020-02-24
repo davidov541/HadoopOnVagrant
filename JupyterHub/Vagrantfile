@@ -26,22 +26,35 @@ Vagrant.configure("2") do |config|
 	        sudo su
 	        cd /root
 
-	        yum -y install https://centos7.iuscommunity.org/ius-release.rpm
-	        yum -y install epel-release python36u python36u-dev python36u-devel npm wget net-tools krb5-libs krb5-workstation git krb5-devel java-1.8.0-openjdk nginx
-	        yum -y install python36u-pip
+			yum update
+			yum upgrade -y
+			yum -y install npm wget net-tools patch sbt krb5-devel
 
 			yum install -y ipa-server ipa-server-dns bind-dyndb-ldap
+			# Installing this ahead of time is necessary in order to avoid an error when installing IPA-Server.
 			yum install -y mod_wsgi
 
 			systemctl start named
 			systemctl enable named
 
 			ipaddress=#{ipaddress}
-			hostname=#{hostname}	
+			hostname=#{hostname}
+			echo "nameserver $ipaddress" >> /etc/resolv.conf
 			sed -i "s/127.0.0.1\t$hostname/$ipaddress\t$hostname/g" /etc/hosts
 
 			ipa-server-install -p directoryManagerAdmin -a kerberosAdmin --ip-address=$ipaddress -n test.hadoop.com -r TEST.HADOOP.COM --mkhomedir -U --hostname=$hostname
 
+			outputFile=/tmp/userPasswordOutput
+			ipa user-add user --first=Test --last=User --cn=user --random > $outputFile
+			userPassword=$(cat $outputFile | grep "Random password:" | grep --only-matching "[^ ]*$")
+
+			# Note that this is done after FreeIPA is installed. 
+			# For whatever reason, installing these before FreeIPA causes it to not start properly.
+	        yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+	        yum -y install epel-release python36u python36u-dev python36u-devel git java-1.8.0-openjdk nginx
+			yum -y install python36u-pip
+			
+			# Allows for connections to occur for Nginx internally.
 	        setsebool -P httpd_can_network_connect 1
 
 	        sparkVersion=2.1.3
@@ -49,7 +62,8 @@ Vagrant.configure("2") do |config|
 	        python3 -m venv /opt/jupyterhub/
 	        /opt/jupyterhub/bin/python3 -m pip install --upgrade pip
 	        /opt/jupyterhub/bin/python3 -m pip install wheel
-	        /opt/jupyterhub/bin/python3 -m pip install jupyterhub jupyterlab
+			/opt/jupyterhub/bin/python3 -m pip install jupyterhub jupyterlab
+			/opt/jupyterhub/bin/python3 -m pip install jupyterhub-ldapauthenticator
 	        npm install -g configurable-http-proxy
 
 	        mkdir -p /opt/jupyterhub/etc/jupyterhub/
@@ -66,9 +80,6 @@ Vagrant.configure("2") do |config|
 
 	        chmod +x /vagrant_*/*.sh
 
-	        useradd user
-	        echo "user:userpw" | chpasswd
-
 	        mkdir -p /usr/local/bin/apache-spark
 	        wget https://archive.apache.org/dist/spark/spark-$sparkVersion/spark-$sparkVersion-bin-hadoop2.7.tgz
 	        tar -xzvf spark-$sparkVersion-bin-hadoop2.7.tgz
@@ -80,7 +91,9 @@ Vagrant.configure("2") do |config|
 	        /opt/jupyterhub/bin/python3 -m pip install "pyspark==$sparkVersion"
 
 	        ipAddress=$(ifconfig | grep --only-matching "192\.168\.[0-9]*\.[0-9]*" | head -n 1)
-	        echo "Jupyter is now running at http://$ipAddress/"
+			echo "Jupyter is now running at http://$ipAddress/"
+			echo "Username: user"
+			echo "User password: $userPassword"
 	        SHELL
     end
 end
