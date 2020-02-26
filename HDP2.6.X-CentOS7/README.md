@@ -2,8 +2,8 @@
 ## Description
 This vagrant file sets up a 3 node cluster running CentOS7 and HDP 2.6.X. As currently configured, the following nodes are created:
 1. mst1.test.hadoop.com - Master node with 8 GB of RAM and 1 core
-2. dat1.test.hadoop.com - Data node with 4 GB of RAM and 1 core
-3. dat2.test.hadoop.com - Data node with 4 GB of RAM and 1 core
+2. dat1.test.hadoop.com - Data node with 8 GB of RAM and 2 cores
+3. dat2.test.hadoop.com - Data node with 8 GB of RAM and 2 cores
 
 These values are flexible, and can be modified as required. More data nodes or master nodes can be created, as your system will allow.
 
