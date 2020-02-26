@@ -42,7 +42,7 @@ Vagrant.configure("2") do |config|
 			echo "nameserver $ipaddress" >> /etc/resolv.conf
 			\\cp /vagrant_shared/hosts /etc/hosts
 
-			ipa-server-install -p directoryManagerAdmin -a password123 --ip-address=$ipaddress -n test.hadoop.com -r TEST.HADOOP.COM -U --mkhomedir --hostname=$hostname
+			ipa-server-install -p directoryManagerAdmin -a password123 --ip-address=$ipaddress -n test.hadoop.com -r TEST.HADOOP.COM -U --mkhomedir --hostname=$hostname --no-host-dns
 	        SHELL
 	end
 	
