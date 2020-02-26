@@ -6,6 +6,46 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
+	config.vm.define "freeipa" do |node|
+        node.vm.box = "centos/7"
+        node.vm.provider "virtualbox" do |vb|
+            # Display the VirtualBox GUI when booting the machine
+            # vb.gui = true
+
+            # Customize the amount of memory on the VM:
+            vb.memory = "512"
+        end
+		hostname = "freeipa.test.hadoop.com"
+		ipaddress = "10.0.0.41"
+        node.vm.hostname = "#{hostname}"
+        node.disksize.size = "50GB"
+        node.vm.synced_folder "Shared", "/vagrant_shared"
+        node.vm.network "public_network"
+        node.vm.network "private_network", ip: "#{ipaddress}", virtualbox__intnet: true
+        node.vm.provision :shell, inline: <<-SHELL
+	        sudo su
+	        cd /root
+
+			yum update
+			yum upgrade -y
+			yum -y install npm wget net-tools patch sbt krb5-devel
+
+			yum install -y ipa-server ipa-server-dns bind-dyndb-ldap
+			# Installing this ahead of time is necessary in order to avoid an error when installing IPA-Server.
+			yum install -y mod_wsgi
+
+			systemctl enable named
+			systemctl start named
+
+			ipaddress=#{ipaddress}
+			hostname=#{hostname}
+			echo "nameserver $ipaddress" >> /etc/resolv.conf
+			\\cp /vagrant_shared/hosts /etc/hosts
+
+			ipa-server-install -p directoryManagerAdmin -a password123 --ip-address=$ipaddress -n test.hadoop.com -r TEST.HADOOP.COM -U --mkhomedir --hostname=$hostname
+	        SHELL
+	end
+	
     config.vm.define "jupyterhub" do |node|
         node.vm.box = "centos/7"
         node.vm.provider "virtualbox" do |vb|
@@ -30,8 +70,8 @@ Vagrant.configure("2") do |config|
 			yum upgrade -y
 			yum -y install npm wget net-tools patch sbt krb5-devel
 
-			yum install -y ipa-server ipa-server-dns bind-dyndb-ldap
-			# Installing this ahead of time is necessary in order to avoid an error when installing IPA-Server.
+			yum install -y ipa-client
+			# Installing this ahead of time is necessary in order to avoid an error when installing IPA-Client.
 			yum install -y mod_wsgi
 
 			systemctl start named
@@ -40,13 +80,9 @@ Vagrant.configure("2") do |config|
 			ipaddress=#{ipaddress}
 			hostname=#{hostname}
 			echo "nameserver $ipaddress" >> /etc/resolv.conf
-			sed -i "s/127.0.0.1\t$hostname/$ipaddress\t$hostname/g" /etc/hosts
+			\\cp /vagrant_shared/hosts /etc/hosts
 
-			ipa-server-install -p directoryManagerAdmin -a kerberosAdmin --ip-address=$ipaddress -n test.hadoop.com -r TEST.HADOOP.COM --mkhomedir -U --hostname=$hostname
-
-			outputFile=/tmp/userPasswordOutput
-			ipa user-add user --first=Test --last=User --cn=user --random > $outputFile
-			userPassword=$(cat $outputFile | grep "Random password:" | grep --only-matching "[^ ]*$")
+			ipa-client-install -p admin -w password123 --ip-address=$ipaddress --server=freeipa.test.hadoop.com --domain=test.hadoop.com --realm=TEST.HADOOP.COM -U --mkhomedir --hostname=$hostname
 
 			# Note that this is done after FreeIPA is installed. 
 			# For whatever reason, installing these before FreeIPA causes it to not start properly.
@@ -64,6 +100,8 @@ Vagrant.configure("2") do |config|
 	        /opt/jupyterhub/bin/python3 -m pip install wheel
 			/opt/jupyterhub/bin/python3 -m pip install jupyterhub jupyterlab
 			/opt/jupyterhub/bin/python3 -m pip install jupyterhub-ldapauthenticator
+
+			yum install -y npm
 	        npm install -g configurable-http-proxy
 
 	        mkdir -p /opt/jupyterhub/etc/jupyterhub/
@@ -78,11 +116,11 @@ Vagrant.configure("2") do |config|
 	        systemctl enable jupyterhub.service
 	        systemctl start jupyterhub.service
 
-	        chmod +x /vagrant_*/*.sh
-
-	        mkdir -p /usr/local/bin/apache-spark
-	        wget https://archive.apache.org/dist/spark/spark-$sparkVersion/spark-$sparkVersion-bin-hadoop2.7.tgz
-	        tar -xzvf spark-$sparkVersion-bin-hadoop2.7.tgz
+			mkdir -p /usr/local/bin/apache-spark
+			echo "Downloading Spark $sparkVersion"
+			wget -q https://archive.apache.org/dist/spark/spark-$sparkVersion/spark-$sparkVersion-bin-hadoop2.7.tgz
+			echo "Extracting Spark Binaries"
+	        tar -xzvf spark-$sparkVersion-bin-hadoop2.7.tgz > /dev/null
 	        mv spark-$sparkVersion-bin-hadoop2.7/* /usr/local/bin/apache-spark
 
 	        /opt/jupyterhub/bin/python3 -m pip install --upgrade toree
@@ -92,8 +130,8 @@ Vagrant.configure("2") do |config|
 
 	        ipAddress=$(ifconfig | grep --only-matching "192\.168\.[0-9]*\.[0-9]*" | head -n 1)
 			echo "Jupyter is now running at http://$ipAddress/"
-			echo "Username: user"
-			echo "User password: $userPassword"
+			echo "Username: admin"
+			echo "User password: password123"
 	        SHELL
     end
 end
