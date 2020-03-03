@@ -7,11 +7,12 @@
 # you're doing.
 Vagrant.configure("2") do |config|
     config.vm.box = "centos/7"
-    config.vm.define "freeIPA" do |node|
+    config.vm.define "ipaserver" do |node|
         node.vm.provider "virtualbox" do |vb|
-            vb.memory = "1024"
+            vb.memory = "512"
         end
-        node.vm.hostname = "freeipa.test.hadoop.com"
+        hostname = "ipaserver.test.hadoop.com"
+        node.vm.hostname = "#{hostname}"
         node.disksize.size = "50GB"
         node.vm.synced_folder "Shared", "/vagrant_shared"
         node.vm.synced_folder "../common", "/vagrant_common"
@@ -19,31 +20,38 @@ Vagrant.configure("2") do |config|
         ipaddress = "10.0.0.60"
         node.vm.network "private_network", ip: "#{ipaddress}", virtualbox__intnet: true
         node.vm.provision :shell, inline: <<-SHELL
-        sudo su
-        cd /root
+            sudo su
+            cd /root
 
-        curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
+            yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+            yum -y install epel-release python36u python36u-dev python36u-devel npm wget net-tools krb5-libs krb5-workstation git krb5-devel java-1.8.0-openjdk nginx
+            yum -y install python36u-pip ansible pki-symkey pki-server
 
-        yum update
-        yum upgrade -y
-        yum -y install npm wget net-tools patch sbt krb5-devel
+            mkdir .ssh
+            ssh-keygen -t rsa -P "" -f .ssh/id_dsa
+            cat .ssh/id_dsa.pub >> .ssh/authorized_keys
+            chmod 700 .ssh
+            chmod 600 .ssh/authorized_keys
 
-        chmod +x /vagrant_*/*.sh
+            ipaddress=#{ipaddress}
+            hostname=#{hostname}
+            echo "nameserver $ipaddress" >> /etc/resolv.conf
+            sed -i "s/127.0.0.1[ \t]*$hostname/$ipaddress\t$hostname/g" /etc/hosts
 
-        ipaddress=#{ipaddress}
-        hostname=$(hostname -f | tr '[:upper:]' '[:lower:]')
-        echo "nameserver $ipaddress" >> /etc/resolv.conf
-        sed -i "s/127.0.0.1[ \t]*$hostname/$ipaddress\t$hostname/g" /etc/hosts
+            ssh-keyscan -H ipaserver.test.hadoop.com > .ssh/known_hosts
+            ssh-keyscan -H ipaserver >> .ssh/known_hosts
 
-        yum install -y ipa-server ipa-server-dns bind-dyndb-ldap
-        
-        yum install -y mod_wsgi
+            git clone https://github.com/freeipa/ansible-freeipa.git --branch v0.1.8
 
-        systemctl start named
-        systemctl enable named
+            \\cp ansible-freeipa/playbooks/install-server.yml .
+            \\cp /vagrant_shared/hosts hosts
 
-        ipa-server-install -p directoryManagerAdmin -a kerberosAdmin --ip-address=$ipaddress -n test.hadoop.com -r TEST.HADOOP.COM --mkhomedir -U --hostname=$hostname
+            mkdir -p .ansible/plugins
+            ln -s /root/ansible-freeipa/roles .ansible/roles
+            ln -s /root/ansible-freeipa/plugins/modules .ansible/plugins/modules
+            ln -s /root/ansible-freeipa/plugins/module_utils .ansible/plugins/module_utils
 
+            ansible-playbook -v -i hosts install-server.yml
         SHELL
     end
 end
