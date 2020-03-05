@@ -36,6 +36,12 @@ Vagrant.configure("2") do |config|
         wget http://mirrors.ocf.berkeley.edu/apache/hadoop/common/hadoop-3.1.1/hadoop-3.1.1.tar.gz
         tar zxf hadoop-3.1.1.tar.gz
 
+        if [ -f /vagrant_shared/hive.tar.gz ]; then
+            \\cp /vagrant_shared/hive.tar.gz .
+        else
+            wget -q http://apache.cs.utah.edu/hive/hive-3.1.2/apache-hive-3.1.2-bin.tar.gz
+            mv *.tar.gz hive.tar.gz
+        fi
         \\cp /vagrant_shared/hive.tar.gz .
         tar zxf hive.tar.gz
         popd
