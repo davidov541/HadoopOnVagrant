@@ -41,14 +41,11 @@ Vagrant.configure("2") do |config|
 
         chmod +x /vagrant_*/*.sh
 
-        ln -s /bin/pip3.6 /bin/pip
-        pip install --upgrade pip
-        pip install shyaml
+        python3 -m pip install --upgrade pip
+        python3 -m pip install shyaml --no-warn-script-location
 
-        gitName=$(cat /vagrant_common/config.yaml | shyaml get-value git.name)
-        gitEmail=$(cat /vagrant_common/config.yaml | shyaml get-value git.email)
-
-        /vagrant_common/setupAuthentication.sh
+        gitName=$(cat /vagrant_common/config.yaml | python3 -m shyaml get-value git.name)
+        gitEmail=$(cat /vagrant_common/config.yaml | python3 -m shyaml get-value git.email)
 
         git config --global user.name "$gitName"
         git config --global user.email "$gitEmail"
