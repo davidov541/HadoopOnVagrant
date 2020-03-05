@@ -3,3 +3,5 @@
 HiveSandbox/Shared/hive.tar.gz
 common/config.yaml
 *.patch
+HadoopOnVagrant.code-workspace
+.metals/*
