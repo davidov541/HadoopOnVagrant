@@ -1,0 +1,53 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+    config.vm.define "confluent" do |node|
+        node.vm.box = "centos/7"
+        node.vm.provider "virtualbox" do |vb|
+            vb.memory = "1024"
+        end
+        node.vm.hostname = "confluent"
+        node.disksize.size = "50GB"
+        node.vm.synced_folder "Shared", "/vagrant_shared"
+        node.vm.synced_folder "../common", "/vagrant_common"
+        node.vm.network "public_network"
+        node.vm.network "private_network", ip: "10.0.0.52", virtualbox__intnet: true
+        node.vm.provision :shell, inline: <<-SHELL
+        sudo su
+        cd /root
+
+        yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+        yum -y install epel-release python36u python36u-dev npm wget net-tools git protobuf-compiler patch
+        yum -y install python36u-pip java-1.8.0-openjdk
+
+        python3 -m pip install --upgrade pip
+        python3 -m pip install shyaml
+
+        cp /vagrant_common/setupPasswordlessSSH.sh .
+        chmod +x setupPasswordlessSSH.sh
+        ./setupPasswordlessSSH.sh
+        rm -f setupPasswordlessSSH.sh
+
+        mkdir /confluent
+        cd /confluent
+        wget -q packages.confluent.io/archive/5.4/confluent-5.4.0-2.12.tar.gz
+        tar -xzvf confluent-5.4.0-2.12.tar.gz
+
+        export CONFLUENT_HOME=/confluent/confluent-5.4.0
+        export PATH=$CONFLUENT_HOME/bin:$PATH
+        echo -e "export CONFLUENT_HOME=/confluent/confluent-5.4.0\n" >> /etc/bashrc
+        echo -e "export PATH=$CONFLUENT_HOME/bin:$PATH\n" >> /etc/bashrc
+
+        curl -L https://cnfl.io/cli | sh -s -- -b /usr/bin/
+
+        /confluent/confluent-5.4.0/bin/confluent-hub install --no-prompt confluentinc/kafka-connect-datagen:latest
+
+        confluent local start
+        SHELL
+    end
+end
