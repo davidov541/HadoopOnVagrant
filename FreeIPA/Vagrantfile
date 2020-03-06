@@ -9,7 +9,7 @@ Vagrant.configure("2") do |config|
     config.vm.box = "centos/7"
     config.vm.define "freeIPA" do |node|
         node.vm.provider "virtualbox" do |vb|
-            vb.memory = "1024"
+            vb.memory = "2048"
         end
         node.vm.hostname = "freeipa.test.hadoop.com"
         node.disksize.size = "50GB"
