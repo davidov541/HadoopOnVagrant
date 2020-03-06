@@ -33,6 +33,8 @@ Vagrant.configure("2") do |config|
         ./setupPasswordlessSSH.sh
         rm -f setupPasswordlessSSH.sh
 
+        mkdir ~/.confluent
+        
         mkdir /confluent
         cd /confluent
         wget -q packages.confluent.io/archive/5.4/confluent-5.4.0-2.12.tar.gz
