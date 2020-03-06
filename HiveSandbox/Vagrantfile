@@ -23,38 +23,86 @@ Vagrant.configure("2") do |config|
 
         yum -y install https://centos7.iuscommunity.org/ius-release.rpm
         yum -y install epel-release python36u python36u-dev npm wget net-tools git protobuf-compiler patch
-        yum -y install python36u-pip
+        yum -y install python36u-pip java-1.8.0-openjdk screen
 
         ln -s /bin/pip3.6 /bin/pip
-        pip install --upgrade pip
-        pip install shyaml
+        python3 -m pip install --upgrade pip
+        python3 -m pip install shyaml
 
         chmod +x /vagrant_*/*.sh
 
         mkdir /grid
         pushd /grid
-        wget http://mirrors.ocf.berkeley.edu/apache/hadoop/common/hadoop-3.1.1/hadoop-3.1.1.tar.gz
-        tar zxf hadoop-3.1.1.tar.gz
+        wget -q http://mirrors.ocf.berkeley.edu/apache/hadoop/common/hadoop-3.2.1/hadoop-3.2.1.tar.gz
+        tar zxf hadoop-3.2.1.tar.gz
+        ln -s hadoop-3.2.1*/ hadoop
 
+        if [ -f /vagrant_shared/hive.tar.gz ]; then
+            \\cp /vagrant_shared/hive.tar.gz .
+        else
+            wget -q http://apache.cs.utah.edu/hive/hive-3.1.2/apache-hive-3.1.2-bin.tar.gz
+            mv apache-hive-3.1.2-bin.tar.gz hive.tar.gz
+        fi
         \\cp /vagrant_shared/hive.tar.gz .
         tar zxf hive.tar.gz
+        ln -s apache-hive-*/ hive
         popd
 
+        export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre
+        export HADOOP_HOME=/grid/hadoop
+        export HIVE_HOME=/grid/hive
+        export PATH=/grid/hadoop/bin:/grid/hive/bin:$PATH
+        echo -e "export JAVA_HOME=$JAVA_HOME\n" >> /etc/bashrc
+        echo -e "export HADOOP_HOME=$HADOOP_HOME\n" >> /etc/bashrc
+        echo -e "export HIVE_HOME=$HIVE_HOME\n" >> /etc/bashrc
+        echo -e "export PATH=$PATH\n" >> /etc/bashrc
+
+        groupadd hadoop
+        groupadd hive
+        useradd -g hadoop --shell=/bin/bash -m -d /home/hive hive
+        useradd -g hadoop --shell=/bin/bash -m -d /home/hdfs hdfs
+
         mkdir /root/hdfs-scratch
-        mkdir -p /user/hive/warehouse
+        mkdir -p /home/hive/warehouse
         mkdir /tmp/hive
         chmod 777 /tmp/hive
 
-        groupadd hive
-        useradd -g hive --shell=/bin/bash -m -d /home/hive hive
+        \\cp /vagrant_shared/runHive.sh /root/
+        chmod 744 /home/hive/runHive.sh
 
-        \\cp /vagrant_shared/runHive.sh /user/hive/
-        chmod 744 /user/hive/runHive.sh
+        chown -R hive /home/hive/
+        chgrp -R hive /home/hive/
 
-        chown -R hive /user/hive/
-        chgrp -R hive /user/hive/
+        chown -R hive $HIVE_HOME
+        chown -R hdfs $HADOOP_HOME
+        chgrp -R hadoop /grid
+        chmod -R 775 /grid
 
-        /vagrant_common/setupAuthentication.sh
+        /vagrant_common/setupPasswordlessSSH.sh
+        su -c "/vagrant_common/setupPasswordlessSSH.sh" - hdfs
+        su -c "/vagrant_common/setupPasswordlessSSH.sh" - hive
+
+        su -c "$HADOOP_HOME/bin/hdfs namenode -format" - hdfs
+
+        rm -f $HIVE_HOME/lib/guava-19.0.jar
+        cp -f $HADOOP_HOME/share/hadoop/common/lib/guava-27.0-jre.jar $HIVE_HOME/lib/
+
+        \\cp -f /vagrant_shared/core-site.xml $HADOOP_HOME/etc/hadoop/
+        \\cp -f /vagrant_shared/hive-site.xml $HIVE_HOME/conf/
+        \\cp -f /vagrant_shared/mapred-site.xml $HADOOP_HOME/etc/hadoop/mapred-site.xml 
+        \\cp -f /vagrant_shared/yarn-site.xml $HADOOP_HOME/etc/hadoop/yarn-site.xml 
+
+        su -c "$HADOOP_HOME/sbin/start-dfs.sh" - hdfs
+        su -c "hdfs dfs -mkdir /tmp" - hdfs
+        su -c "hdfs dfs -mkdir -p /user/hive/warehouse" - hdfs
+        su -c "hdfs dfs -chgrp -R hadoop /tmp" - hdfs
+        su -c "hdfs dfs -chgrp -R hadoop /user" - hdfs
+        su -c "hdfs dfs -chown -R hive /user/hive" - hdfs
+        su -c "hdfs dfs -chmod g+w /tmp" - hdfs
+        su -c "hdfs dfs -chown -R hive /user/hive" - hdfs
+        su -c "hdfs dfs -chmod g+w /user/hive/warehouse" - hdfs
+
+        su -c "$HADOOP_HOME/sbin/start-yarn.sh" - hdfs
         SHELL
     end
 end
