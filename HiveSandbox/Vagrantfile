@@ -48,6 +48,15 @@ Vagrant.configure("2") do |config|
         ln -s apache-hive-*/ hive
         popd
 
+        export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre
+        export HADOOP_HOME=/grid/hadoop
+        export HIVE_HOME=/grid/hive
+        export PATH=/grid/hadoop/bin:/grid/hive/bin:$PATH
+        echo -e "export JAVA_HOME=$JAVA_HOME\n" >> /etc/bashrc
+        echo -e "export HADOOP_HOME=$HADOOP_HOME\n" >> /etc/bashrc
+        echo -e "export HIVE_HOME=$HIVE_HOME\n" >> /etc/bashrc
+        echo -e "export PATH=$PATH\n" >> /etc/bashrc
+
         groupadd hadoop
         groupadd hive
         useradd -g hadoop --shell=/bin/bash -m -d /home/hive hive
@@ -64,41 +73,36 @@ Vagrant.configure("2") do |config|
         chown -R hive /home/hive/
         chgrp -R hive /home/hive/
 
-        chown -R hive /grid/hive
-        chown -R hdfs /grid/hadoop
+        chown -R hive $HIVE_HOME
+        chown -R hdfs $HADOOP_HOME
         chgrp -R hadoop /grid
         chmod -R 775 /grid
-
-        echo -e "export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre\n" >> /etc/bashrc
-        echo -e "export HADOOP_HOME=/grid/hadoop\n" >> /etc/bashrc
-        echo -e "export HIVE_HOME=/grid/hive\n" >> /etc/bashrc
-        echo -e "export PATH=/grid/hadoop/bin:/grid/hive/bin:$PATH\n" >> /etc/bashrc
 
         /vagrant_common/setupPasswordlessSSH.sh
         su -c "/vagrant_common/setupPasswordlessSSH.sh" - hdfs
         su -c "/vagrant_common/setupPasswordlessSSH.sh" - hive
 
-        su -c "/grid/hadoop/bin/hdfs namenode -format" - hdfs
+        su -c "$HADOOP_HOME/bin/hdfs namenode -format" - hdfs
 
-        rm -f /grid/hive/lib/guava-19.0.jar
-        cp -f /grid/hadoop/share/hadoop/common/lib/guava-27.0-jre.jar /grid/hive/lib/
+        rm -f $HIVE_HOME/lib/guava-19.0.jar
+        cp -f $HADOOP_HOME/share/hadoop/common/lib/guava-27.0-jre.jar $HIVE_HOME/lib/
 
-        \\cp -f /vagrant_shared/core-site.xml /grid/hadoop/etc/hadoop/
-        \\cp -f /vagrant_shared/hive-site.xml /grid/hive/conf/
-        \\cp -f /vagrant_shared/mapred-site.xml /grid/hadoop/etc/hadoop/mapred-site.xml 
-        \\cp -f /vagrant_shared/yarn-site.xml /grid/hadoop/etc/hadoop/yarn-site.xml 
+        \\cp -f /vagrant_shared/core-site.xml $HADOOP_HOME/etc/hadoop/
+        \\cp -f /vagrant_shared/hive-site.xml $HIVE_HOME/conf/
+        \\cp -f /vagrant_shared/mapred-site.xml $HADOOP_HOME/etc/hadoop/mapred-site.xml 
+        \\cp -f /vagrant_shared/yarn-site.xml $HADOOP_HOME/etc/hadoop/yarn-site.xml 
 
-        su -c "/grid/hadoop/sbin/start-dfs.sh" - hdfs
-        su -c "$HADOOP_HOME/bin/hadoop fs -mkdir /tmp" - hdfs
-        su -c "$HADOOP_HOME/bin/hadoop fs -mkdir -p /user/hive/warehouse" - hdfs
-        su -c "$HADOOP_HOME/bin/hadoop fs -chgrp -R hadoop /tmp" - hdfs
-        su -c "$HADOOP_HOME/bin/hadoop fs -chgrp -R hadoop /user" - hdfs
-        su -c "$HADOOP_HOME/bin/hadoop fs -chown -R hive /user/hive" - hdfs
-        su -c "$HADOOP_HOME/bin/hadoop fs -chmod g+w /tmp" - hdfs
-        su -c "$HADOOP_HOME/bin/hadoop fs -chown -R hive /user/hive" - hdfs
-        su -c "$HADOOP_HOME/bin/hadoop fs -chmod g+w /user/hive/warehouse" - hdfs
+        su -c "$HADOOP_HOME/sbin/start-dfs.sh" - hdfs
+        su -c "hdfs dfs -mkdir /tmp" - hdfs
+        su -c "hdfs dfs -mkdir -p /user/hive/warehouse" - hdfs
+        su -c "hdfs dfs -chgrp -R hadoop /tmp" - hdfs
+        su -c "hdfs dfs -chgrp -R hadoop /user" - hdfs
+        su -c "hdfs dfs -chown -R hive /user/hive" - hdfs
+        su -c "hdfs dfs -chmod g+w /tmp" - hdfs
+        su -c "hdfs dfs -chown -R hive /user/hive" - hdfs
+        su -c "hdfs dfs -chmod g+w /user/hive/warehouse" - hdfs
 
-        su -c "/grid/hadoop/sbin/start-yarn.sh" - hdfs
+        su -c "$HADOOP_HOME/sbin/start-yarn.sh" - hdfs
         SHELL
     end
 end

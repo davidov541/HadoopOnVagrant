@@ -34,7 +34,7 @@ Vagrant.configure("2") do |config|
         rm -f setupPasswordlessSSH.sh
 
         mkdir ~/.confluent
-        
+
         mkdir /confluent
         cd /confluent
         wget -q packages.confluent.io/archive/5.4/confluent-5.4.0-2.12.tar.gz
@@ -42,8 +42,8 @@ Vagrant.configure("2") do |config|
 
         export CONFLUENT_HOME=/confluent/confluent-5.4.0
         export PATH=$CONFLUENT_HOME/bin:$PATH
-        echo -e "export CONFLUENT_HOME=/confluent/confluent-5.4.0\n" >> /etc/bashrc
-        echo -e "export PATH=$CONFLUENT_HOME/bin:$PATH\n" >> /etc/bashrc
+        echo -e "export CONFLUENT_HOME=$CONFLUENT_HOME\n" >> /etc/bashrc
+        echo -e "export PATH=$PATH\n" >> /etc/bashrc
 
         curl -L https://cnfl.io/cli | sh -s -- -b /usr/bin/
 
