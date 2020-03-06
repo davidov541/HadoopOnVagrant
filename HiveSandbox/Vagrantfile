@@ -85,6 +85,8 @@ Vagrant.configure("2") do |config|
 
         \\cp -f /vagrant_shared/core-site.xml /grid/hadoop/etc/hadoop/
         \\cp -f /vagrant_shared/hive-site.xml /grid/hive/conf/
+        \\cp -f /vagrant_shared/mapred-site.xml /grid/hadoop/etc/hadoop/mapred-site.xml 
+        \\cp -f /vagrant_shared/yarn-site.xml /grid/hadoop/etc/hadoop/yarn-site.xml 
 
         su -c "/grid/hadoop/sbin/start-dfs.sh" - hdfs
         su -c "$HADOOP_HOME/bin/hadoop fs -mkdir /tmp" - hdfs
