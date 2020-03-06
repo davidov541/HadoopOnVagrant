@@ -93,7 +93,10 @@ Vagrant.configure("2") do |config|
         su -c "$HADOOP_HOME/bin/hadoop fs -chgrp -R hadoop /user" - hdfs
         su -c "$HADOOP_HOME/bin/hadoop fs -chown -R hive /user/hive" - hdfs
         su -c "$HADOOP_HOME/bin/hadoop fs -chmod g+w /tmp" - hdfs
+        su -c "$HADOOP_HOME/bin/hadoop fs -chown -R hive /user/hive" - hdfs
         su -c "$HADOOP_HOME/bin/hadoop fs -chmod g+w /user/hive/warehouse" - hdfs
+
+        su -c "/grid/hadoop/sbin/start-yarn.sh" - hdfs
         SHELL
     end
 end
