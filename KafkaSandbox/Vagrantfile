@@ -1,0 +1,59 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+    config.vm.define "kafkasandbox" do |node|
+        node.vm.box = "centos/7"
+        node.vm.provider "virtualbox" do |vb|
+            vb.memory = "1024"
+        end
+        node.vm.hostname = "kafkasandbox"
+        node.disksize.size = "50GB"
+        node.vm.synced_folder "Shared", "/vagrant_shared"
+        node.vm.synced_folder "../common", "/vagrant_common"
+        node.vm.network "public_network"
+        node.vm.network "private_network", ip: "10.0.0.52", virtualbox__intnet: true
+        node.vm.provision :shell, inline: <<-SHELL
+        sudo su
+        cd /root
+
+        yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+        yum -y install epel-release python36u python36u-dev npm wget net-tools git protobuf-compiler patch
+        yum -y install python36u-pip screen java-1.8.0-openjdk
+
+        python3 -m pip install --upgrade pip
+        python3 -m pip install shyaml
+
+        chmod +x /vagrant_*/*.sh
+
+        mkdir /grid
+        pushd /grid
+        if [ -f /vagrant_shared/kafka.tar.gz ]; then
+            \\cp /vagrant_shared/kafka.tar.gz .
+        else
+            wget -q http://apache.cs.utah.edu/kafka/2.4.0/kafka_2.12-2.4.0.tgz
+            mv *.tgz kafka.tar.gz
+        fi
+        tar zxf kafka.tar.gz
+        mv kafka*/ kafka/
+        popd
+
+        mkdir /root/hdfs-scratch
+        mkdir /tmp/kafka
+        chmod 777 /tmp/kafka
+
+        groupadd kafka
+        useradd -g kafka --shell=/bin/bash -m -d /home/kafka kafka
+
+        \\cp /vagrant_shared/runKafka.sh /home/kafka/
+        chmod 744 /home/kafka/runKafka.sh
+
+        chown -R kafka /home/kafka/
+        chgrp -R kafka /home/kafka/
+        SHELL
+    end
+end
