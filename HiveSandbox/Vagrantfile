@@ -72,7 +72,7 @@ Vagrant.configure("2") do |config|
         echo -e "export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre\n" >> /etc/bashrc
         echo -e "export HADOOP_HOME=/grid/hadoop\n" >> /etc/bashrc
         echo -e "export HIVE_HOME=/grid/hive\n" >> /etc/bashrc
-        echo -e "export PATH=/grid/hadoop/bin:/grid/hive/bin:$PATH" >> /etc/bashrc
+        echo -e "export PATH=/grid/hadoop/bin:/grid/hive/bin:$PATH\n" >> /etc/bashrc
 
         /vagrant_common/setupPasswordlessSSH.sh
         su -c "/vagrant_common/setupPasswordlessSSH.sh" - hdfs
