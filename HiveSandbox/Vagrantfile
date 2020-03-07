@@ -68,7 +68,7 @@ Vagrant.configure("2") do |config|
         chmod 777 /tmp/hive
 
         \\cp /vagrant_shared/runHive.sh /root/
-        chmod 744 /home/hive/runHive.sh
+        chmod 744 /root/runHive.sh
 
         chown -R hive /home/hive/
         chgrp -R hive /home/hive/
