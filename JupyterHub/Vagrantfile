@@ -6,52 +6,6 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-	config.vm.define "freeipa" do |node|
-        node.vm.box = "centos/7"
-        node.vm.provider "virtualbox" do |vb|
-            # Display the VirtualBox GUI when booting the machine
-            # vb.gui = true
-
-            # Customize the amount of memory on the VM:
-            vb.memory = "512"
-        end
-		hostname = "freeipa.test.hadoop.com"
-		ipaddress = "10.0.0.41"
-        node.vm.hostname = "#{hostname}"
-        node.disksize.size = "50GB"
-        node.vm.synced_folder "Shared", "/vagrant_shared"
-        node.vm.network "public_network"
-        node.vm.network "private_network", ip: "#{ipaddress}", virtualbox__intnet: true
-        node.vm.provision :shell, inline: <<-SHELL
-	        sudo su
-	        cd /root
-
-			yum update
-			yum upgrade -y
-			yum -y install npm wget net-tools patch sbt krb5-devel
-
-			yum install -y ipa-server ipa-server-dns bind-dyndb-ldap
-			# Installing this ahead of time is necessary in order to avoid an error when installing IPA-Server.
-			yum install -y mod_wsgi
-
-			systemctl enable named
-			systemctl start named
-
-			ipaddress=#{ipaddress}
-			hostname=#{hostname}
-			echo "nameserver $ipaddress" >> /etc/resolv.conf
-			\\cp /vagrant_shared/hosts /etc/hosts
-
-			# Increase the startup timeout to 900 seconds (15 minutes)
-			# This is necessary since the VM is slower than normal FreeIPA servers, so we were seeing issues 
-			# with the CA service not starting up in time, failing the entire installation.
-			# See https://serverfault.com/questions/1005438/freeipa-installation-failing-during-ca-restart
-			sed -i "s/'startup_timeout', 300/'startup_timeout', 900/g" /usr/lib/python2.7/site-packages/ipalib/constants.py
-
-			ipa-server-install -p directoryManagerAdmin -a password123 --ip-address=$ipaddress -n test.hadoop.com -r TEST.HADOOP.COM -U --mkhomedir --hostname=$hostname --no-host-dns
-	        SHELL
-	end
-	
     config.vm.define "jupyterhub" do |node|
         node.vm.box = "centos/7"
         node.vm.provider "virtualbox" do |vb|
@@ -88,7 +42,7 @@ Vagrant.configure("2") do |config|
 			echo "nameserver $ipaddress" >> /etc/resolv.conf
 			\\cp /vagrant_shared/hosts /etc/hosts
 
-			ipa-client-install -p admin -w password123 --ip-address=$ipaddress --server=freeipa.test.hadoop.com --domain=test.hadoop.com --realm=TEST.HADOOP.COM -U --mkhomedir --hostname=$hostname
+			ipa-client-install -p admin -w kerberosAdmin --ip-address=$ipaddress --server=freeipa.test.hadoop.com --domain=test.hadoop.com --realm=TEST.HADOOP.COM -U --mkhomedir --hostname=$hostname
 
 			# Note that this is done after FreeIPA is installed. 
 			# For whatever reason, installing these before FreeIPA causes it to not start properly.
@@ -137,7 +91,7 @@ Vagrant.configure("2") do |config|
 	        ipAddress=$(ifconfig | grep --only-matching "192\.168\.[0-9]*\.[0-9]*" | head -n 1)
 			echo "Jupyter is now running at http://$ipAddress/"
 			echo "Username: admin"
-			echo "User password: password123"
+			echo "User password: kerberosAdmin"
 	        SHELL
     end
 end

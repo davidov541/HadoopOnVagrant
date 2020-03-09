@@ -92,7 +92,7 @@ c.LDAPAuthenticator.bind_dn_template = ["uid={username},cn=users,cn=accounts,dc=
 c.LDAPAuthenticator.lookup_dn_search_filter = '({login_attr}={login})'
 c.LDAPAuthenticator.lookup_dn_user_dn_attribute = 'uid'
 c.LDAPAuthenticator.lookup_dn_search_user = 'admin'
-c.LDAPAuthenticator.lookup_dn_search_password = 'password123'
+c.LDAPAuthenticator.lookup_dn_search_password = 'kerberosAdmin'
 c.LDAPAuthenticator.user_search_base = 'cn=users,cn=accounts,dc=test,dc=hadoop,dc=com'
 c.LDAPAuthenticator.user_search_filter = '(&(objectClass=person)(uid={username}))'
 c.LDAPAuthenticator.user_membership_attribute = 'memberOf'
