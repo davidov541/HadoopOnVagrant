@@ -40,7 +40,7 @@ Vagrant.configure("2") do |config|
 			ipaddress=#{ipaddress}
 			hostname=#{hostname}
 			echo "nameserver $ipaddress" >> /etc/resolv.conf
-			\\cp /vagrant_shared/hosts /etc/hosts
+			\\cp -f /vagrant_common/hosts /etc/hosts
 
 			ipa-client-install -p admin -w kerberosAdmin --ip-address=$ipaddress --server=freeipa.test.hadoop.com --domain=test.hadoop.com --realm=TEST.HADOOP.COM -U --mkhomedir --hostname=$hostname
 
