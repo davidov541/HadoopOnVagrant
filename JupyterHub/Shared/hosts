@@ -1,4 +1,0 @@
-10.0.0.40	jupyterhub.test.hadoop.com	jupyterhub
-10.0.0.41	freeipa.test.hadoop.com	freeipa
-127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
-::1         localhost localhost.localdomain localhost6 localhost6.localdomain6

@@ -10,7 +10,8 @@ Vagrant.configure("2") do |config|
     config.vm.define "linuxdev" do |node|
         node.vm.box = "centos/7"
         node.vm.provider "virtualbox" do |vb|
-            vb.memory = "1024"
+            vb.memory = "2048"
+            vb.cpus = "2"
         end
         node.vm.hostname = "linuxdev"
         node.disksize.size = "50GB"
@@ -38,6 +39,8 @@ Vagrant.configure("2") do |config|
         printf '\nexport MAVEN_OPTS="-Xmx1G -XX:MaxPermSize=256m"\n' >> /etc/bashrc
 
         systemctl start docker
+
+		\\cp -f /vagrant_common/hosts /etc/hosts
 
         chmod +x /vagrant_*/*.sh
 

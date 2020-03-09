@@ -1,0 +1,8 @@
+10.0.0.40	jupyterhub.test.hadoop.com	jupyterhub
+10.0.0.50   linuxdev.test.hadoop.com    linuxdev
+10.0.0.51   hivesandbox.test.hadoop.com hivesandbox
+10.0.0.52   confluent.test.hadoop.com   confluent
+10.0.0.53   kafkasandbox.test.hadoop.com    kafkasandbox
+10.0.0.60	freeipa.test.hadoop.com	freeipa
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
