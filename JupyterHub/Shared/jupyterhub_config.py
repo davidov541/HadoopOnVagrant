@@ -461,6 +461,17 @@ c.JupyterHub.bind_url = 'http://:8000/'
 # Spawner(LoggingConfigurable) configuration
 #------------------------------------------------------------------------------
 
+import os
+import subprocess
+
+def create_dir_hook(spawner):
+    username = spawner.user.name
+    if not os.path.exists(os.path.join('/home', username)):
+        subprocess.call(["sudo", "/sbin/mkhomedir_helper", username])
+
+# attach the hook function to the spawner
+c.Spawner.pre_spawn_hook = create_dir_hook
+
 ## Base class for spawning single-user notebook servers.
 #  
 #  Subclass this, and override the following methods:
@@ -795,7 +806,7 @@ c.Spawner.environment = {
 #  Admin access should be treated the same way root access is.
 #  
 #  Defaults to an empty set, in which case no user has admin access.
-#c.Authenticator.admin_users = set()
+c.Authenticator.admin_users = set("admin")
 
 ## Automatically begin the login process
 #  
