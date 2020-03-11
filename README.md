@@ -11,9 +11,9 @@ This repo contains a collection of vagrant boxes which have come in handy while 
 * vagrant-vbguest plugin
 
 ## Configuration
-The boxes all assume that there is a file at common/config.yaml which contains any configuration that may be modified. This file should be based off of the common/config.yaml.template file which is in the repo. THe config.yaml file itself is excluded from the repo, and should never be checked in. The following fields are expected to be in the configuration file:
+The boxes all assume that there is a file at common/config.yaml which contains any configuration that may be modified. This file should be based off of the common/config.yaml.template file which is in the repo. The config.yaml file itself is excluded from the repo, and should never be checked in. The following fields are expected to be in the configuration file:
 * **git.name:** Your name, which will show up on any git checkins from any of the boxes.
-* **git.email:** Your email address, which will be placed on any git checkins from any of the boxes. This may need to be an anonymous email address, if your GitHub account is set up that way.
+* **git.email:** Your email address, which will be placed on any git checkins from any of the boxes. This may need to be an anonymous email address, if your GitHub account is set up to use one.
 * **kerberos.enabled:** If set to true, then the other settings under kerberos will be used to connect the box to a MIT KDC. This is independent of whether the box is connected to Active Directory (meaning that as long as both systems use separate domains, they can both be set up). This value is case-insensitive, and is expected to be "true" or "false".
 * **active_directory.enabled:** If set to true, then the other settings under active_directory will be used to connect the box to an AD realm. This is independent of whether the box is connected to an MIT KDC (meaning that as long as both systems use separate domains, they can both be set up). This value is case-insensitive, and is expected to be "true" or "false".
 ## FAQs
