@@ -23,6 +23,7 @@ Vagrant.configure("2") do |config|
     node.disksize.size = "50GB"
     ipaddress = "10.0.0.70"
     node.vm.synced_folder "Shared", "/vagrant_shared"
+    node.vm.synced_folder "../common", "/vagrant_common"
     node.vm.network "public_network"
     node.vm.network "private_network", ip: "#{ipaddress}", virtualbox__intnet: true
     node.vm.provision :shell, inline: <<-SHELL
@@ -33,9 +34,9 @@ Vagrant.configure("2") do |config|
 
      yum update
      yum upgrade -y
-     yum -y install npm wget net-tools patch sbt krb5-devel
+     yum -y install npm wget net-tools patch sbt krb5-devel oracle-j2sdk1.7
 
-     \\cp /vagrant_shared/hosts /etc/hosts
+     \\cp /vagrant_common/hosts /etc/hosts
 
      chmod +x /vagrant_*/*.sh
 
@@ -73,7 +74,18 @@ Vagrant.configure("2") do |config|
 
      curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
      python get-pip.py
-     pip install pyopenssl ndg-httpsclient pyasn1 psycopg2
+     pip install psycopg2-binary
+
+     sudo -u postgres psql -f /vagrant_shared/setup.sql postgres
+
+     wget https://archive.cloudera.com/cm5/redhat/7/x86_64/cm/cloudera-manager.repo
+     mv cloudera-manager.repo /etc/yum.repos.d/
+
+     yum install -y cloudera-manager-daemons cloudera-manager-server
+
+     /usr/share/cmf/schema/scm_prepare_database.sh postgresql scm scm scm
+
+     service cloudera-scm-server start
 
      echo "done"
     SHELL
@@ -95,6 +107,7 @@ Vagrant.configure("2") do |config|
       node.disksize.size = "50GB"
       ipaddress = "10.0.0.#{i + 70}"
       node.vm.synced_folder "Shared", "/vagrant_shared"
+      node.vm.synced_folder "../common", "/vagrant_common"
       node.vm.network "public_network"
       node.vm.network "private_network", ip: "#{ipaddress}", virtualbox__intnet: true
       node.vm.provision :shell, inline: <<-SHELL
@@ -102,9 +115,9 @@ Vagrant.configure("2") do |config|
        cd /root
 
        rpm -ivh https://download.postgresql.org/pub/repos/yum/9.3/redhat/rhel-7-x86_64/pgdg-centos93-9.3-3.noarch.rpm
-       yum install -y postgresql93 postgresql93-server postgresql93-libs postgresql93-contrib wget net-tools freeipa-client
+       yum install -y postgresql93 postgresql93-server postgresql93-libs postgresql93-contrib wget net-tools freeipa-client oracle-j2sdk1.7
 
-       \\cp /vagrant_shared/hosts /etc/hosts
+       \\cp /vagrant_common/hosts /etc/hosts
 
        ipaddress=#{ipaddress}
        hostname=#{hostname}
