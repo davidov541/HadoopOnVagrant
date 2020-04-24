@@ -1,0 +1,142 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+numMasters=1
+numData=2
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  config.vm.define "mst1" do |node|
+    node.vm.box = "centos/7"
+    node.vm.provider "virtualbox" do |vb|
+       # Display the VirtualBox GUI when booting the machine
+       # vb.gui = true
+    
+       # Customize the amount of memory on the VM:
+       vb.memory = "8192"
+    end
+    hostname = "mst1.cdh5162.hadoop.com"
+    node.vm.hostname = "#{hostname}"
+    node.disksize.size = "50GB"
+    ipaddress = "10.0.0.70"
+    node.vm.synced_folder "Shared", "/vagrant_shared"
+    node.vm.synced_folder "../common", "/vagrant_common"
+    node.vm.network "public_network"
+    node.vm.network "private_network", ip: "#{ipaddress}", virtualbox__intnet: true
+    node.vm.provision :shell, inline: <<-SHELL
+     sudo su
+     cd /root
+
+     curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
+
+     yum update
+     yum upgrade -y
+     yum -y install npm wget net-tools patch sbt krb5-devel oracle-j2sdk1.7
+
+     \\cp /vagrant_common/hosts /etc/hosts
+
+     chmod +x /vagrant_*/*.sh
+
+     ipaddress=#{ipaddress}
+     hostname=#{hostname}
+     echo "nameserver $ipaddress" >> /etc/resolv.conf
+     sed -i "s/127.0.0.1[ \t]*$hostname/$ipaddress\t$hostname/g" /etc/hosts
+
+     yum install -y ipa-server ipa-server-dns bind-dyndb-ldap
+       
+     yum install -y mod_wsgi
+
+     systemctl start named
+     systemctl enable named
+
+     ipa-server-install -p directoryManagerAdmin -a kerberosAdmin --ip-address=$ipaddress -n test.hadoop.com -r TEST.HADOOP.COM --mkhomedir -U --hostname=$hostname
+
+     rpm -ivh https://download.postgresql.org/pub/repos/yum/9.3/redhat/rhel-7-x86_64/pgdg-centos93-9.3-3.noarch.rpm
+     yum install -y postgresql93 postgresql93-server postgresql93-libs postgresql93-contrib
+
+     /usr/pgsql-9.3/bin/postgresql93-setup initdb
+     systemctl start postgresql-9.3.service
+     \\cp /vagrant_shared/pg_hba.conf /var/lib/pgsql/9.3/data/pg_hba.conf
+     \\cp /vagrant_shared/postgresql.conf /var/lib/pgsql/9.3/data/postgresql.conf
+     systemctl restart postgresql-9.3.service
+
+     ulimit -n 10000
+     echo 1 > /proc/sys/vm/swappiness
+     printf "\nvm.swappiness=1\n" >> /etc/sysctl.conf
+
+     ssh-keygen -t rsa -P "" -f ~/.ssh/id_dsa
+     \\cp ~/.ssh/id_dsa.pub /vagrant_shared/mst1.pub
+
+     chmod +x /vagrant_shared/*.sh
+
+     curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+     python get-pip.py
+     pip install psycopg2-binary
+
+     sudo -u postgres psql -f /vagrant_shared/setup.sql postgres
+
+     wget https://archive.cloudera.com/cm5/redhat/7/x86_64/cm/cloudera-manager.repo
+     mv cloudera-manager.repo /etc/yum.repos.d/
+
+     yum install -y cloudera-manager-daemons cloudera-manager-server
+
+     /usr/share/cmf/schema/scm_prepare_database.sh postgresql scm scm scm
+
+     service cloudera-scm-server start
+
+     echo "done"
+    SHELL
+  end
+
+  (1..numData).each do |i|
+    config.vm.define "dat#{i}" do |node|
+      node.vm.box = "centos/7"
+      node.vm.provider "virtualbox" do |vb|
+         # Display the VirtualBox GUI when booting the machine
+         # vb.gui = true
+      
+         # Customize the amount of memory on the VM:
+         vb.memory = "6144"
+         vb.cpus = 2
+      end
+      hostname = "dat#{i}.cdh5162.hadoop.com"
+      node.vm.hostname = "#{hostname}"
+      node.disksize.size = "50GB"
+      ipaddress = "10.0.0.#{i + 70}"
+      node.vm.synced_folder "Shared", "/vagrant_shared"
+      node.vm.synced_folder "../common", "/vagrant_common"
+      node.vm.network "public_network"
+      node.vm.network "private_network", ip: "#{ipaddress}", virtualbox__intnet: true
+      node.vm.provision :shell, inline: <<-SHELL
+       sudo su
+       cd /root
+
+       rpm -ivh https://download.postgresql.org/pub/repos/yum/9.3/redhat/rhel-7-x86_64/pgdg-centos93-9.3-3.noarch.rpm
+       yum install -y postgresql93 postgresql93-server postgresql93-libs postgresql93-contrib wget net-tools freeipa-client oracle-j2sdk1.7
+
+       \\cp /vagrant_common/hosts /etc/hosts
+
+       ipaddress=#{ipaddress}
+       hostname=#{hostname}
+       echo "nameserver $ipaddress" >> /etc/resolv.conf
+       sed -i "s/127.0.0.1[ \t]*$hostname/$ipaddress\t$hostname/g" /etc/hosts
+
+       ipa-client-install --mkhomedir -p admin -w kerberosAdmin --ip-address=${ipaddress} --hostname=${hostname} --domain=test.hadoop.com --server=mst1.test.hadoop.com --realm=TEST.HADOOP.COM -U -w 
+
+       ulimit -n 10000
+       echo 1 > /proc/sys/vm/swappiness
+       printf "\nvm.swappiness=1\n" >> /etc/sysctl.conf
+
+       ssh-keygen -t rsa -P "" -f ~/.ssh/id_dsa
+       \\cp ~/.ssh/id_dsa.pub /vagrant_shared/dat#{i}.pub
+
+       chmod +x /vagrant_shared/*.sh
+
+       echo "done"
+      SHELL
+    end
+  end
+end
